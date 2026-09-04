@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "9a585b455d95ac42c32909ac8036ce19"
-application_url = "https://example.com"
+application_url = "https://crush-candy-production.up.railway.app"
 embedded = true
 name = "Crush Candy Supplies"
 
@@ -27,7 +27,7 @@ api_version = "2026-07"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
-redirect_urls = [ ]
+redirect_urls = [ "https://crush-candy-production.up.railway.app/auth/callback" ]
 
 [build]
 automatically_update_urls_on_dev = true
