@@ -235,3 +235,5 @@ Before M1 starts, record human confirmation for all applicable M0 gates:
 
 These are decisions or external dashboard actions, not values for the codebase
 to invent.
+#   c r u s h - c a n d y -  
+ 
