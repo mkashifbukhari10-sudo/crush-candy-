@@ -240,5 +240,12 @@ M0 is implemented. Recorded decisions relevant to M1:
 
 These are decisions or external dashboard actions, not values for the codebase
 to invent.
+
+M7 content and support is implemented: customer/driver announcements are
+separate app-owned streams, public Q&A remains Shopify Metaobject content, and
+the guided help tree feeds customer-owned support requests and the Admin inbox.
+Support submission is available 24/7; responses may take up to 24 hours. The
+large-quantity pickup CTA remains disabled until the unresolved §13.6 threshold
+and private-address disclosure policy are confirmed.
 #   c r u s h - c a n d y -  
  

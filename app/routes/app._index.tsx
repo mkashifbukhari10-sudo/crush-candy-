@@ -38,6 +38,8 @@ export default function Index() {
           <Link to="/app/dispatch">Manage dispatch</Link>
           <Link to="/app/chat">Chat oversight</Link>
           <Link to="/app/delivery-settings">Delivery settings</Link>
+          <Link to="/app/announcements">Announcements</Link>
+          <Link to="/app/support">Support inbox</Link>
         </s-stack>
       </s-section>
     </s-page>

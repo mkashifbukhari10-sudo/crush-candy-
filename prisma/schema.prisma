@@ -229,7 +229,92 @@ model AppSettings {
   tier40To55Cents Int @default(12000)
   over55BaseCents Int @default(12000)
   over55PerKmCents Int @default(300)
+  largeQuantityThresholdCents Int?
   updatedAt          DateTime @updatedAt
+}
+
+enum AnnouncementAudience {
+  CUSTOMER
+  DRIVER
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Announcement {
+  id          String               @id @default(cuid())
+  audience    AnnouncementAudience
+  status      AnnouncementStatus   @default(DRAFT)
+  title       String
+  body        String
+  publishAt   DateTime?
+  sortOrder   Int                  @default(0)
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([audience, status, publishAt, sortOrder])
+}
+
+enum HelpNodeType {
+  OPTION
+  ANSWER
+  TERMINAL
+}
+
+model HelpNode {
+  id        String       @id @default(cuid())
+  parentId  String?
+  parent    HelpNode?    @relation("HelpTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  HelpNode[]   @relation("HelpTree")
+  type      HelpNodeType @default(OPTION)
+  label     String
+  guidance  String?
+  sortOrder Int          @default(0)
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([parentId, active, sortOrder])
+}
+
+enum SupportStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model SupportTicket {
+  id                String        @id @default(cuid())
+  shopifyCustomerId String
+  category          String
+  nodePath          Json
+  subject           String
+  initialMessage    String
+  status            SupportStatus @default(OPEN)
+  respondedAt       DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  messages          SupportMessage[]
+
+  @@index([shopifyCustomerId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model SupportMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  senderPlane String
+  senderId   String
+  body       String
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId, createdAt, id])
 }
 
 enum DistanceMethod {
