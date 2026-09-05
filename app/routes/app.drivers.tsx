@@ -62,7 +62,7 @@ export default function DriversPage() {
 
       <s-section heading="Invite a driver">
         <s-text>Send a secure one-time activation link. The driver will set their own password.</s-text>
-        <Form method="post" style={{ display: "grid", gap: 12, marginTop: 16, maxWidth: 640 }}>
+        <Form method="post" className="admin-form" style={{ marginTop: 16, maxWidth: 640 }}>
           <input type="hidden" name="intent" value="create" />
           <label>Email address<input name="email" type="email" autoComplete="email" required /></label>
           <label>Display name<input name="displayName" required /></label>

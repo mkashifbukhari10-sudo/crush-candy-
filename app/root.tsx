@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   useRouteError,
 } from "react-router";
+import "./styles/admin-forms.css";
 
 export default function App() {
   return (
