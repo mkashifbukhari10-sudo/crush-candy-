@@ -4,5 +4,5 @@ import type { Config } from "@react-router/dev/config";
 // Railway origin. React Router's single-fetch CSRF guard requires this origin
 // to be explicitly allowed before dispatching the route action.
 export default {
-  allowedActionOrigins: ["admin.shopify.com"],
+  allowedActionOrigins: ["admin.shopify.com", "admin.shopify.com:443"],
 } satisfies Config;
