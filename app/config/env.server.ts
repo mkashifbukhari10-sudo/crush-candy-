@@ -74,6 +74,7 @@ const serverEnvironmentSchema = z.object({
   DELIVERY_ORIGIN_LONGITUDE: optionalString,
   DELIVERY_DISTANCE_METHOD: z.enum(["STRAIGHT_LINE", "DRIVING"]).optional(),
   DELIVERY_KM_ROUNDING: z.enum(["EXACT", "CEIL", "FLOOR", "NEAREST"]).optional(),
+  PICKUP_ADDRESS: optionalString,
   OBJECT_STORAGE_ENDPOINT: optionalUrl,
   OBJECT_STORAGE_REGION: optionalString,
   OBJECT_STORAGE_BUCKET: optionalString,

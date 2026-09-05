@@ -190,7 +190,7 @@ model Assignment {
   destinationPostcode String?
   driverId           String?
   driver             Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  conversation       Conversation?
+  conversations      Conversation[]
   events             AssignmentEvent[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -220,8 +220,8 @@ model AppSettings {
   processingWindowHours Int @default(24)
   minDeliverySpendCents Int @default(25000)
   deliveryEnabled Boolean @default(true)
-  distanceMethod DistanceMethod?
-  kmRoundingMode KmRounding?
+  distanceMethod DistanceMethod? @default(DRIVING)
+  kmRoundingMode KmRounding? @default(CEIL)
   baseLatitude Decimal?
   baseLongitude Decimal?
   tierUnder25Cents Int @default(5000)
@@ -230,6 +230,7 @@ model AppSettings {
   over55BaseCents Int @default(12000)
   over55PerKmCents Int @default(300)
   largeQuantityThresholdCents Int?
+  largeQuantityThresholdGrams Int? @default(5000)
   updatedAt          DateTime @updatedAt
 }
 
@@ -330,6 +331,7 @@ enum KmRounding {
 
 enum ConversationKind {
   ORDER_DELIVERY
+  PICKUP_ARRANGEMENT
 }
 
 enum ConversationStatus {
@@ -340,15 +342,16 @@ enum ConversationStatus {
 enum ParticipantRole {
   CUSTOMER
   DRIVER
+  ADMIN
 }
 
 model Conversation {
   id                    String             @id @default(cuid())
   kind                  ConversationKind   @default(ORDER_DELIVERY)
   status                ConversationStatus @default(OPEN)
-  assignmentId          String             @unique
+  assignmentId          String
   assignment            Assignment         @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
-  shopifyOrderId        String             @unique
+  shopifyOrderId        String
   shopifyCustomerId     String
   closedAt              DateTime?
   visibleToCustomerUntil DateTime?
@@ -359,6 +362,7 @@ model Conversation {
 
   @@index([shopifyCustomerId, createdAt])
   @@index([status, updatedAt])
+  @@unique([assignmentId, kind])
 }
 
 model ConversationParticipant {

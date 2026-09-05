@@ -9,7 +9,7 @@ export function calculateDeliveryRate(input: { distanceKm: number; subtotalCents
   if (!settings.deliveryEnabled) return { available: false, reason: "DISABLED" };
   if (!Number.isFinite(distance) || distance < 0) return { available: false, reason: "UNSERVICEABLE" };
   if (subtotal < settings.minDeliverySpendCents) return { available: false, reason: "MINIMUM_ORDER" };
-  if (!settings.distanceMethod || !settings.kmRoundingMode) return { available: false, reason: "UNCONFIGURED_DISTANCE" };
+  if (settings.distanceMethod !== "DRIVING" || !settings.kmRoundingMode) return { available: false, reason: "UNCONFIGURED_DISTANCE" };
   if (distance < 25) return { available: true, amountCents: settings.tierUnder25Cents, currency: "AUD", distanceKm: distance };
   if (distance <= 40) return { available: true, amountCents: settings.tier25To40Cents, currency: "AUD", distanceKm: distance };
   if (distance <= 55) return { available: true, amountCents: settings.tier40To55Cents, currency: "AUD", distanceKm: distance };

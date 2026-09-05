@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import db from "../app/db.server";
-import { ensureOrderConversation, getDriverConversation, sendMessage } from "../app/services/chat.server";
+import { adminReadConversation, ensureOrderConversation, getCustomerConversation, getDriverConversation, sendMessage } from "../app/services/chat.server";
 import { assignOrder } from "../app/services/dispatch.server";
 
 const suite = process.env.RUN_DATABASE_TESTS === "1" ? describe : describe.skip;
@@ -9,7 +9,7 @@ let assignmentId = ""; let accountIds: string[] = [];
 
 suite("M5 chat authorization", () => {
   afterEach(async () => {
-    if (assignmentId) { const c = await db.conversation.findUnique({ where: { assignmentId } }); if (c) { await db.message.deleteMany({ where: { conversationId: c.id } }); await db.conversationParticipant.deleteMany({ where: { conversationId: c.id } }); await db.auditLog.deleteMany({ where: { targetId: c.id } }); await db.conversation.delete({ where: { id: c.id } }); } await db.assignmentEvent.deleteMany({ where: { assignmentId } }); await db.auditLog.deleteMany({ where: { targetId: assignmentId } }); await db.assignment.delete({ where: { id: assignmentId } }); assignmentId = ""; }
+    if (assignmentId) { const cs = await db.conversation.findMany({ where: { assignmentId } }); for (const c of cs) { await db.message.deleteMany({ where: { conversationId: c.id } }); await db.conversationParticipant.deleteMany({ where: { conversationId: c.id } }); await db.auditLog.deleteMany({ where: { targetId: c.id } }); await db.conversation.delete({ where: { id: c.id } }); } await db.assignmentEvent.deleteMany({ where: { assignmentId } }); await db.auditLog.deleteMany({ where: { targetId: assignmentId } }); await db.assignment.delete({ where: { id: assignmentId } }); assignmentId = ""; }
     for (const id of accountIds) { await db.driver.deleteMany({ where: { accountId: id } }); await db.driverAccount.delete({ where: { id } }); } accountIds = [];
   });
   it("creates one conversation and revokes the previous driver's access after reassignment", async () => {
@@ -22,6 +22,11 @@ suite("M5 chat authorization", () => {
     await assignOrder({ assignmentId: assignment.id, driverId: b.driver!.id, actorId: "m5-admin", actorPlane: "ADMIN" });
     expect(await getDriverConversation(first.id, a.driver!.id)).toBeNull();
     expect(await getDriverConversation(first.id, b.driver!.id)).not.toBeNull();
+    expect(await getCustomerConversation(first.id, assignment.shopifyCustomerId!)).not.toBeNull();
+    await db.assignment.update({ where: { id: assignment.id }, data: { status: "DELIVERED", deliveredAt: new Date() } });
+    expect(await getCustomerConversation(first.id, assignment.shopifyCustomerId!)).toBeNull();
+    expect(await getDriverConversation(first.id, b.driver!.id)).toBeNull();
+    expect((await adminReadConversation(first.id, "m8-admin"))?.messages).toHaveLength(1);
     expect((await db.message.count({ where: { conversationId: first.id } }))).toBe(1);
   });
 });

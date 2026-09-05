@@ -22,7 +22,7 @@ function orderPayload(payload: unknown) {
   const id = orderGid(p.admin_graphql_api_id ?? p.id);
   if (!id) throw new Error("Order id missing");
   const customer = customerGid(p.customer);
-  const lineItems = Array.isArray(p.line_items) ? p.line_items.map((item) => { const i = item as Record<string, unknown>; return { title: typeof i.title === "string" ? i.title : "Item", quantity: Number(i.quantity) || 0, sku: typeof i.sku === "string" ? i.sku : null }; }) : [];
+  const lineItems = Array.isArray(p.line_items) ? p.line_items.map((item) => { const i = item as Record<string, unknown>; const variant = i.variant && typeof i.variant === "object" ? i.variant as Record<string, unknown> : {}; const rawWeight = i.weight ?? variant.weight; const rawUnit = i.weight_unit ?? variant.weight_unit; const grams = Number(i.grams ?? (typeof rawWeight === "number" ? rawWeight : 0)); return { title: typeof i.title === "string" ? i.title : "Item", quantity: Number(i.quantity) || 0, sku: typeof i.sku === "string" ? i.sku : null, weightGrams: Number.isFinite(grams) ? grams : 0, weightValue: typeof rawWeight === "number" ? rawWeight : null, weightUnit: typeof rawUnit === "string" ? rawUnit : "g" }; }) : [];
   const address = p.shipping_address && typeof p.shipping_address === "object" ? p.shipping_address as Record<string, unknown> : {};
   return { id, orderNumber: String(p.name ?? p.order_number ?? p.id), customer, lineItems, city: typeof address.city === "string" ? address.city : null, postcode: typeof address.zip === "string" ? address.zip : null, cancelled: Boolean(p.cancelled_at) };
 }
@@ -49,7 +49,7 @@ async function maybeAutoAssign(assignmentId: string) {
 export async function listAssignments() { return db.assignment.findMany({ include: { driver: { select: { id: true, displayName: true } } }, orderBy: { createdAt: "desc" }, take: 500 }); }
 export async function getAssignmentForDriver(id: string, driverId: string) { return db.assignment.findFirst({ where: { id, driverId, status: { in: ACTIVE_STATUSES } }, include: { driver: true } }); }
 export async function listAssignmentsForDriver(driverId: string) { return db.assignment.findMany({ where: { driverId, status: { in: ACTIVE_STATUSES } }, orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }], take: 200 }); }
-export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 200 }); }
+export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true, lineItems: true }, orderBy: { createdAt: "desc" }, take: 200 }); }
 export async function assignOrder(input: { assignmentId: string; driverId: string | null; actorId: string; actorPlane: "ADMIN" | "CUSTOMER" | "DRIVER" | "SYSTEM" }) {
   return db.$transaction(async (tx) => {
     const current = await tx.assignment.findUnique({ where: { id: input.assignmentId } });

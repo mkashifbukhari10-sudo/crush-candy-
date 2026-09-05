@@ -9,7 +9,7 @@ export async function ensureOrderConversation(assignmentId: string) {
   if (!assignment?.shopifyCustomerId || !assignment.driverId || !OPEN_STATUSES.includes(assignment.status as (typeof OPEN_STATUSES)[number])) throw new Error("Conversation is not available for this order");
   const customerId = assignment.shopifyCustomerId; const driverId = assignment.driverId;
   return db.$transaction(async (tx) => {
-    const existing = await tx.conversation.findUnique({ where: { assignmentId }, include: { participants: true } });
+    const existing = await tx.conversation.findFirst({ where: { assignmentId, kind: "ORDER_DELIVERY" }, include: { participants: true } });
     if (existing) return existing;
     const conversation = await tx.conversation.create({ data: { assignmentId, shopifyOrderId: assignment.shopifyOrderId, shopifyCustomerId: customerId, participants: { create: [{ role: "CUSTOMER", subjectId: customerId }, { role: "DRIVER", subjectId: driverId }] } }, include: { participants: true } });
     await appendAuditLog(tx, { actorPlane: "SYSTEM", actorId: "chat", action: "CONVERSATION_CREATED", targetType: "Conversation", targetId: conversation.id, payload: { assignmentId } });
@@ -18,13 +18,13 @@ export async function ensureOrderConversation(assignmentId: string) {
 }
 
 export async function getCustomerConversation(id: string, customerId: string) {
-  return db.conversation.findFirst({ where: { id, shopifyCustomerId: customerId, status: "OPEN" }, include: { messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }, assignment: true } });
+  return db.conversation.findFirst({ where: { id, shopifyCustomerId: customerId, status: "OPEN", OR: [{ kind: "PICKUP_ARRANGEMENT" }, { kind: "ORDER_DELIVERY", assignment: { status: { in: [...OPEN_STATUSES] } } }] }, include: { messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }, assignment: true } });
 }
 export async function getDriverConversation(id: string, driverId: string) {
-  return db.conversation.findFirst({ where: { id, status: "OPEN", assignment: { driverId, status: { in: [...OPEN_STATUSES] } } }, include: { messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }, assignment: true } });
+  return db.conversation.findFirst({ where: { id, kind: "ORDER_DELIVERY", status: "OPEN", assignment: { driverId, status: { in: [...OPEN_STATUSES] } } }, include: { messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }, assignment: true } });
 }
 export async function listCustomerConversations(customerId: string) { return db.conversation.findMany({ where: { shopifyCustomerId: customerId, status: "OPEN" }, include: { assignment: { select: { shopifyOrderNumber: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { updatedAt: "desc" }, take: 200 }); }
-export async function listDriverConversations(driverId: string) { return db.conversation.findMany({ where: { status: "OPEN", assignment: { driverId, status: { in: [...OPEN_STATUSES] } } }, include: { assignment: { select: { shopifyOrderNumber: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { updatedAt: "desc" }, take: 200 }); }
+export async function listDriverConversations(driverId: string) { return db.conversation.findMany({ where: { kind: "ORDER_DELIVERY", status: "OPEN", assignment: { driverId, status: { in: [...OPEN_STATUSES] } } }, include: { assignment: { select: { shopifyOrderNumber: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { updatedAt: "desc" }, take: 200 }); }
 export async function adminSearchConversations(query?: string) { return db.conversation.findMany({ where: query ? { OR: [{ shopifyOrderId: { contains: query, mode: "insensitive" } }, { assignment: { shopifyOrderNumber: { contains: query, mode: "insensitive" } } }] } : undefined, include: { assignment: { select: { shopifyOrderNumber: true, shopifyCustomerId: true, driver: { select: { displayName: true } } } }, messages: { orderBy: { createdAt: "asc" }, take: 100 } }, orderBy: { updatedAt: "desc" }, take: 100 }); }
 export async function adminReadConversation(id: string, adminId: string) { const c = await db.conversation.findUnique({ where: { id }, include: { messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 200 }, assignment: { include: { driver: { select: { displayName: true } } } }, participants: true } }); if (c) await appendAuditLog(db, { actorPlane: "ADMIN", actorId: adminId, action: "CHAT_READ_BY_ADMIN", targetType: "Conversation", targetId: id, payload: { assignmentId: c.assignmentId } }); return c; }
 
