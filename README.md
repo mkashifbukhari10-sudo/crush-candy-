@@ -3,7 +3,7 @@
 This is the custom, single-merchant Shopify app described by
 `../PHASE2-ARCHITECTURE-PLAN.md`. The architecture plan is locked.
 
-Current implementation: **Milestone 4 — dispatch core**. M4 adds Shopify order synchronization, operational assignments, scheduling, driver Upcoming work, and approved-customer delivery status. Chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
+Current implementation: **Milestone 5 — secure order chat**. M5 adds reassignment-safe customer/driver conversations, Admin oversight, unread state, SSE, and authenticated fallback polling. Commerce rules, content/support, and launch hardening remain intentionally unimplemented.
 
 ## Runtime stack
 

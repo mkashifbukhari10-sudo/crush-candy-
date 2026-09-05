@@ -35,6 +35,8 @@ export default function Index() {
           </s-stack>
           <Link to="/app/access-codes">Manage private-store access codes</Link>
           <Link to="/app/drivers">Manage driver accounts</Link>
+          <Link to="/app/dispatch">Manage dispatch</Link>
+          <Link to="/app/chat">Chat oversight</Link>
         </s-stack>
       </s-section>
     </s-page>

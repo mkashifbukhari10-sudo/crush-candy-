@@ -190,6 +190,7 @@ model Assignment {
   destinationPostcode String?
   driverId           String?
   driver             Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  conversation       Conversation?
   events             AssignmentEvent[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -217,6 +218,67 @@ model AppSettings {
   autoAssignEnabled  Boolean  @default(false)
   autoAssignDriverId String?
   updatedAt          DateTime @updatedAt
+}
+
+enum ConversationKind {
+  ORDER_DELIVERY
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum ParticipantRole {
+  CUSTOMER
+  DRIVER
+}
+
+model Conversation {
+  id                    String             @id @default(cuid())
+  kind                  ConversationKind   @default(ORDER_DELIVERY)
+  status                ConversationStatus @default(OPEN)
+  assignmentId          String             @unique
+  assignment            Assignment         @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  shopifyOrderId        String             @unique
+  shopifyCustomerId     String
+  closedAt              DateTime?
+  visibleToCustomerUntil DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  messages              Message[]
+  participants          ConversationParticipant[]
+
+  @@index([shopifyCustomerId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model ConversationParticipant {
+  id                String           @id @default(cuid())
+  conversationId    String
+  conversation      Conversation     @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  role              ParticipantRole
+  subjectId         String
+  joinedAt          DateTime         @default(now())
+  leftAt            DateTime?
+  lastReadAt        DateTime?
+  lastReadMessageId String?
+
+  @@unique([conversationId, role, subjectId])
+  @@index([subjectId, leftAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  senderType     ParticipantRole
+  senderId       String
+  senderLabel    String
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt, id])
 }
 
 model DriverSession {

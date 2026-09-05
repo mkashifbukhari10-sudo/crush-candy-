@@ -24,6 +24,7 @@ export default function DriverHome() {
       </header>
       <section style={{ background: "white", padding: 24, borderRadius: 12, marginTop: 24 }}>
         <h2>Driver portal</h2>
+        <p><a href="/driver/chat">Open delivery chats</a></p>
         <p>Your authenticated driver account is active. Operational deliveries will appear here in a later milestone.</p>
         <nav aria-label="Driver portal areas"><ul><li>Upcoming — coming in M3</li><li>Chat — coming in M3</li><li>Notice — coming in M3</li></ul></nav>
       </section>
