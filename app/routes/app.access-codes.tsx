@@ -22,12 +22,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await requireAdmin(request);
   const formData = await request.formData();
-  const parsed = actionInput.safeParse(Object.fromEntries(formData));
+  // Normalize FormData explicitly: embedded browser/web-component submissions
+  // can include extra fields, but the action contract only needs these values.
+  const intent = String(formData.get("intent") ?? "");
+  const id = String(formData.get("id") ?? "");
+  const parsed = actionInput.safeParse(intent === "revoke" ? { intent, id } : { intent });
   if (!parsed.success) {
-    return Response.json(
-      { created: null, message: "Invalid access-code action." },
-      { status: 400 },
-    );
+    return { created: null, message: "Choose a valid access-code action and try again." };
   }
   const input = parsed.data;
   const adminId =
