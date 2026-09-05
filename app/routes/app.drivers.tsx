@@ -30,6 +30,51 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function DriversPage() {
-  const { drivers } = useLoaderData<typeof loader>(); const result = useActionData<typeof action>();
-  return <s-page heading="Drivers" inlineSize="large"><s-stack direction="block" gap="base">{result?.message ? <s-text>{result.message}</s-text> : null}{result?.activationToken ? <s-section heading="One-time activation link"><p><code>{`https://crush-candy-production.up.railway.app/driver/activate?token=${result.activationToken}`}</code></p><p>Expires {new Date(result.expiresAt).toLocaleString()}. Copy it now; it will not be shown again.</p></s-section> : null}{result?.resetToken ? <s-section heading="One-time password reset link"><p><code>{`https://crush-candy-production.up.railway.app/driver/reset-password?token=${result.resetToken}`}</code></p><p>Expires {new Date(result.expiresAt).toLocaleString()}.</p></s-section> : null}<s-section heading="Create driver"><Form method="post"><input type="hidden" name="intent" value="create" /><label>Email <input name="email" type="email" required /></label><label>Display name <input name="displayName" required /></label><label>Phone (admin only) <input name="phone" /></label><label>Vehicle note (admin only) <input name="vehicleNote" /></label><s-button type="submit" variant="primary">Create invitation</s-button></Form></s-section><s-section heading="Driver accounts">{drivers.length === 0 ? <s-text>No drivers created.</s-text> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%" }}><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>{drivers.map((driver) => <tr key={driver.id}><td>{driver.driver?.displayName}</td><td>{driver.email}</td><td>{driver.status}</td><td><Form method="post"><input type="hidden" name="intent" value={driver.status === "INVITED" ? "reissue" : "status"} /><input type="hidden" name="accountId" value={driver.id} />{driver.status === "INVITED" ? <s-button type="submit">Reissue activation</s-button> : null}{driver.status === "ACTIVE" ? <><input type="hidden" name="status" value="SUSPENDED" /><s-button type="submit" tone="critical">Suspend</s-button></> : null}{driver.status === "SUSPENDED" ? <><input type="hidden" name="status" value="ACTIVE" /><s-button type="submit">Reactivate</s-button></> : null}</Form><Form method="post"><input type="hidden" name="intent" value="revoke" /><input type="hidden" name="accountId" value={driver.id} /><s-button type="submit">Revoke sessions</s-button></Form><Form method="post"><input type="hidden" name="intent" value="reset" /><input type="hidden" name="accountId" value={driver.id} /><input type="hidden" name="email" value={driver.email} /><s-button type="submit">Reset password</s-button></Form></td></tr>)}</tbody></table></div>}</s-section></s-stack></s-page>;
+  const { drivers } = useLoaderData<typeof loader>();
+  const result = useActionData<typeof action>();
+  const counts = {
+    total: drivers.length,
+    active: drivers.filter((driver) => driver.status === "ACTIVE").length,
+    invited: drivers.filter((driver) => driver.status === "INVITED").length,
+    inactive: drivers.filter((driver) => driver.status === "SUSPENDED" || driver.status === "DEACTIVATED").length,
+  };
+  const statusTone = (status: string) => status === "ACTIVE" ? "success" : status === "INVITED" ? "info" : "critical";
+  const statusLabel = (status: string) => status === "INVITED" ? "Invited" : status === "ACTIVE" ? "Active" : status === "SUSPENDED" ? "Suspended" : "Deactivated";
+
+  return <s-page heading="Drivers" inlineSize="large">
+    <s-stack direction="block" gap="base">
+      <s-section>
+        <s-stack direction="block" gap="small">
+          <s-heading>Driver operations</s-heading>
+          <s-text>Invite and manage the people who deliver customer orders. Driver access is managed separately from Shopify customer accounts.</s-text>
+        </s-stack>
+      </s-section>
+
+      {result?.message ? <s-section><s-banner tone={result.ok ? "success" : "critical"}>{result.message}</s-banner></s-section> : null}
+      {result?.activationToken ? <s-section heading="Activation link — copy once"><s-stack direction="block" gap="small"><p><code style={{ overflowWrap: "anywhere" }}>{`https://crush-candy-production.up.railway.app/driver/activate?token=${result.activationToken}`}</code></p><s-text>Expires {new Date(result.expiresAt).toLocaleString()}. This link will not be shown again.</s-text></s-stack></s-section> : null}
+      {result?.resetToken ? <s-section heading="Password reset link — copy once"><s-stack direction="block" gap="small"><p><code style={{ overflowWrap: "anywhere" }}>{`https://crush-candy-production.up.railway.app/driver/reset-password?token=${result.resetToken}`}</code></p><s-text>Expires {new Date(result.expiresAt).toLocaleString()}. This link will not be shown again.</s-text></s-stack></s-section> : null}
+
+      <s-section heading="Overview">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          {[["Total drivers", counts.total], ["Active", counts.active], ["Invited", counts.invited], ["Suspended / deactivated", counts.inactive]].map(([label, value]) => <div key={label} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 16, background: "#fff" }}><s-text>{label}</s-text><div style={{ fontSize: 28, fontWeight: 650, marginTop: 8 }}>{value}</div></div>)}
+        </div>
+      </s-section>
+
+      <s-section heading="Invite a driver">
+        <s-text>Send a secure one-time activation link. The driver will set their own password.</s-text>
+        <Form method="post" style={{ display: "grid", gap: 12, marginTop: 16, maxWidth: 640 }}>
+          <input type="hidden" name="intent" value="create" />
+          <label>Email address<input name="email" type="email" autoComplete="email" required /></label>
+          <label>Display name<input name="displayName" required /></label>
+          <label>Phone <span style={{ color: "#616161" }}>(admin-only operational note)</span><input name="phone" /></label>
+          <label>Vehicle note <span style={{ color: "#616161" }}>(admin-only operational note)</span><input name="vehicleNote" /></label>
+          <div><s-button type="submit" variant="primary">Create invitation</s-button></div>
+        </Form>
+      </s-section>
+
+      <s-section heading="Driver accounts">
+        {drivers.length === 0 ? <div style={{ padding: "28px 8px", textAlign: "center" }}><s-heading>No drivers yet</s-heading><s-text>Create an invitation above to add the first driver.</s-text></div> : <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}><thead><tr><th style={{ textAlign: "left", padding: 10 }}>Driver</th><th style={{ textAlign: "left", padding: 10 }}>Login</th><th style={{ textAlign: "left", padding: 10 }}>Status</th><th style={{ textAlign: "left", padding: 10 }}>Account actions</th></tr></thead><tbody>{drivers.map((driver) => <tr key={driver.id} style={{ borderTop: "1px solid #e1e3e5" }}><td style={{ padding: 10 }}><strong>{driver.driver?.displayName ?? "Pending driver"}</strong></td><td style={{ padding: 10 }}>{driver.email}</td><td style={{ padding: 10 }}><s-badge tone={statusTone(driver.status)}>{statusLabel(driver.status)}</s-badge></td><td style={{ padding: 10 }}><div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>{driver.status === "INVITED" ? <Form method="post"><input type="hidden" name="intent" value="reissue" /><input type="hidden" name="accountId" value={driver.id} /><s-button type="submit">Reissue invite</s-button></Form> : null}{driver.status === "ACTIVE" ? <Form method="post"><input type="hidden" name="intent" value="status" /><input type="hidden" name="accountId" value={driver.id} /><input type="hidden" name="status" value="SUSPENDED" /><s-button type="submit" tone="critical">Suspend</s-button></Form> : null}{driver.status === "SUSPENDED" ? <Form method="post"><input type="hidden" name="intent" value="status" /><input type="hidden" name="accountId" value={driver.id} /><input type="hidden" name="status" value="ACTIVE" /><s-button type="submit">Reactivate</s-button></Form> : null}<Form method="post"><input type="hidden" name="intent" value="revoke" /><input type="hidden" name="accountId" value={driver.id} /><s-button type="submit">Revoke sessions</s-button></Form><Form method="post"><input type="hidden" name="intent" value="reset" /><input type="hidden" name="accountId" value={driver.id} /><input type="hidden" name="email" value={driver.email} /><s-button type="submit">Reset password</s-button></Form></div></td></tr>)}</tbody></table></div>}
+      </s-section>
+    </s-stack>
+  </s-page>;
 }
