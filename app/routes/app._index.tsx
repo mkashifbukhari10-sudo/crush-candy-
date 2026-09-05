@@ -23,37 +23,48 @@ export default function Index() {
   const status = useLoaderData<typeof loader>();
   const withContext = (path: string) =>
     status.adminContext ? `${path}?${status.adminContext}` : path;
+  const metrics = status.metrics;
+  const actions = [
+    ["Access Codes", "Create and revoke private-store codes", "/app/access-codes"],
+    ["Drivers", "Manage driver accounts and sessions", "/app/drivers"],
+    ["Dispatch", "Assign and schedule operational orders", "/app/dispatch"],
+    ["Chat Oversight", "Review customer-driver conversations", "/app/chat"],
+    ["Delivery Settings", "Manage delivery rules and pricing", "/app/delivery-settings"],
+    ["Announcements", "Publish customer and driver notices", "/app/announcements"],
+    ["Support Inbox", "Respond to customer support requests", "/app/support"],
+  ] as const;
 
   return (
-    <s-page heading={APP_NAME} inlineSize="small">
-      <s-section heading={APP_PHASE}>
-        <s-stack direction="block" gap="base">
-          <s-heading>{status.milestone}</s-heading>
-          <s-stack direction="inline" gap="base" alignItems="center">
-            <s-text type="strong">App</s-text>
-            <s-badge tone="success">
-              {status.appConnected ? "Connected" : "Unavailable"}
-            </s-badge>
+    <s-page heading={APP_NAME} inlineSize="large">
+      <s-stack direction="block" gap="base">
+        <s-section heading={APP_PHASE}>
+          <s-stack direction="block" gap="base">
+            <s-text>{status.milestone}</s-text>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+              <s-badge tone={status.appConnected ? "success" : "critical"}>App · {status.appConnected ? "Connected" : "Unavailable"}</s-badge>
+              <s-badge tone={status.databaseConnected ? "success" : "critical"}>Database · {status.databaseConnected ? "Connected" : "Unavailable"}</s-badge>
+              <s-badge tone="info">Environment · {status.environment}</s-badge>
+            </div>
           </s-stack>
-          <s-stack direction="inline" gap="base" alignItems="center">
-            <s-text type="strong">Database</s-text>
-            <s-badge tone={status.databaseConnected ? "success" : "critical"}>
-              {status.databaseConnected ? "Connected" : "Unavailable"}
-            </s-badge>
-          </s-stack>
-          <s-stack direction="inline" gap="base" alignItems="center">
-            <s-text type="strong">Environment</s-text>
-            <s-text>{status.environment}</s-text>
-          </s-stack>
-          <Link to={withContext("/app/access-codes")}>Manage private-store access codes</Link>
-          <Link to={withContext("/app/drivers")}>Manage driver accounts</Link>
-          <Link to={withContext("/app/dispatch")}>Manage dispatch</Link>
-          <Link to={withContext("/app/chat")}>Chat oversight</Link>
-          <Link to={withContext("/app/delivery-settings")}>Delivery settings</Link>
-          <Link to={withContext("/app/announcements")}>Announcements</Link>
-          <Link to={withContext("/app/support")}>Support inbox</Link>
-        </s-stack>
-      </s-section>
+        </s-section>
+        <s-section heading="Operational overview">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+            {[
+              ["Active drivers", metrics.activeDrivers],
+              ["Pending orders", metrics.pendingOrders],
+              ["Scheduled deliveries", metrics.scheduledDeliveries],
+              ["Open support", metrics.openTickets],
+              ["Active chats", metrics.activeConversations],
+              ["Active access codes", metrics.activeAccessCodes],
+            ].map(([label, value]) => <div key={label} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 16, background: "#fff" }}><s-text>{label}</s-text><div style={{ fontSize: 28, fontWeight: 650, marginTop: 8 }}>{value}</div></div>)}
+          </div>
+        </s-section>
+        <s-section heading="Quick actions">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            {actions.map(([title, description, path]) => <Link key={path} to={withContext(path)} style={{ display: "block", border: "1px solid #e1e3e5", borderRadius: 8, padding: 16, color: "inherit", textDecoration: "none", background: "#fff" }}><strong>{title}</strong><div style={{ marginTop: 6, color: "#616161", fontSize: 14 }}>{description}</div></Link>)}
+          </div>
+        </s-section>
+      </s-stack>
     </s-page>
   );
 }
