@@ -3,7 +3,7 @@
 This is the custom, single-merchant Shopify app described by
 `../PHASE2-ARCHITECTURE-PLAN.md`. The architecture plan is locked.
 
-Current implementation: **Milestone 3 — authorization hardening**. M3 adds explicit plane boundaries, principal-bound resource authorization, fail-closed IDOR protection, internal-secret verification, and cross-plane security tests. Dispatch, chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
+Current implementation: **Milestone 4 — dispatch core**. M4 adds Shopify order synchronization, operational assignments, scheduling, driver Upcoming work, and approved-customer delivery status. Chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
 
 ## Runtime stack
 

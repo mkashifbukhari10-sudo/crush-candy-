@@ -3,11 +3,12 @@ import { Form, redirect, useLoaderData } from "react-router";
 
 import { requireDriver } from "../auth/driver.server";
 import { createDriverCsrfToken } from "../lib/driver-security.server";
+import { listAssignmentsForDriver } from "../services/dispatch.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const auth = await requireDriver(request);
-    return { ...auth.context, csrfToken: createDriverCsrfToken(auth.context.sessionId) };
+    return { ...auth.context, csrfToken: createDriverCsrfToken(auth.context.sessionId), assignments: await listAssignmentsForDriver(auth.context.driverId) };
   } catch {
     throw redirect("/driver/login");
   }

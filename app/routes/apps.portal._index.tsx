@@ -46,6 +46,7 @@ export default function PortalIndex() {
     <>
       <h1>Access approved</h1>
       <p>Your approval is active. You do not need another access code.</p>
+      <p><Link to="/apps/portal/orders">View delivery status</Link></p>
       <a href={`https://${state.shop}`}>Continue to the store</a>
     </>
   );

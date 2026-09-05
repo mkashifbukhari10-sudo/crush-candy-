@@ -156,7 +156,67 @@ model Driver {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  assignments Assignment[]
+
   @@index([displayName])
+}
+
+enum AssignmentStatus {
+  PENDING
+  ASSIGNED
+  SCHEDULED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+model Assignment {
+  id                 String           @id @default(cuid())
+  shopifyOrderId     String           @unique
+  shopifyOrderNumber String
+  shopifyCustomerId  String?
+  status             AssignmentStatus @default(PENDING)
+  slaDueAt           DateTime
+  scheduledFor       DateTime?
+  assignedAt         DateTime?
+  assignedBy         String?
+  dispatchedAt       DateTime?
+  deliveredAt        DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+  lineItems          Json?
+  destinationCity    String?
+  destinationPostcode String?
+  driverId           String?
+  driver             Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  events             AssignmentEvent[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([driverId, scheduledFor])
+  @@index([status, slaDueAt])
+  @@index([shopifyCustomerId, createdAt])
+}
+
+model AssignmentEvent {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  type         String
+  actorPlane   String
+  actorId      String
+  metadata     Json
+  createdAt    DateTime   @default(now())
+
+  @@index([assignmentId, createdAt])
+}
+
+model AppSettings {
+  id                 String   @id @default("singleton")
+  autoAssignEnabled  Boolean  @default(false)
+  autoAssignDriverId String?
+  updatedAt          DateTime @updatedAt
 }
 
 model DriverSession {
