@@ -19,7 +19,7 @@ export default function App() {
       <div className={styles.content}>
         <h1 className={styles.heading}>Crush Candy Supplies</h1>
         <p className={styles.text}>
-          Phase 2 App — Milestone 0 Foundation
+          Phase 2 App — Milestone 1 Private Customer Access
         </p>
         <Form className={styles.form} method="post" action="/auth/login">
           <label className={styles.label}>
