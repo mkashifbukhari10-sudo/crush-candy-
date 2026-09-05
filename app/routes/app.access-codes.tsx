@@ -35,11 +35,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     session.onlineAccessInfo?.associated_user.id.toString() ?? session.id;
 
   if (input.intent === "generate") {
-    const created = await createAccessCode(adminId);
-    return {
-      created,
-      message: "Access code generated. Copy it now; it will not be shown again.",
-    };
+    try {
+      const created = await createAccessCode(adminId);
+      return {
+        created,
+        message: "Access code generated. Copy it now; it will not be shown again.",
+      };
+    } catch (error) {
+      console.error("Access code generation failed", {
+        operation: "generate",
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      return { created: null, message: "Access code could not be generated. Please try again." };
+    }
   }
 
   const revoked = await revokeAccessCode(input.id, adminId);
