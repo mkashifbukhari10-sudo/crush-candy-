@@ -6,11 +6,23 @@ import { APP_NAME, APP_PHASE } from "../config/constants";
 import { getFoundationStatus } from "../services/admin/foundation.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  return getFoundationStatus(request);
+  const status = await getFoundationStatus(request);
+  // Embedded Admin navigations must retain Shopify's launch context. Without
+  // these parameters, a full navigation to a child route cannot establish the
+  // shop/session binding and Shopify renders its generic error page.
+  const url = new URL(request.url);
+  const context = new URLSearchParams();
+  for (const key of ["shop", "host", "embedded", "id_token"]) {
+    const value = url.searchParams.get(key);
+    if (value) context.set(key, value);
+  }
+  return { ...status, adminContext: context.toString() };
 };
 
 export default function Index() {
   const status = useLoaderData<typeof loader>();
+  const withContext = (path: string) =>
+    status.adminContext ? `${path}?${status.adminContext}` : path;
 
   return (
     <s-page heading={APP_NAME} inlineSize="small">
@@ -33,13 +45,13 @@ export default function Index() {
             <s-text type="strong">Environment</s-text>
             <s-text>{status.environment}</s-text>
           </s-stack>
-          <Link to="/app/access-codes">Manage private-store access codes</Link>
-          <Link to="/app/drivers">Manage driver accounts</Link>
-          <Link to="/app/dispatch">Manage dispatch</Link>
-          <Link to="/app/chat">Chat oversight</Link>
-          <Link to="/app/delivery-settings">Delivery settings</Link>
-          <Link to="/app/announcements">Announcements</Link>
-          <Link to="/app/support">Support inbox</Link>
+          <Link to={withContext("/app/access-codes")}>Manage private-store access codes</Link>
+          <Link to={withContext("/app/drivers")}>Manage driver accounts</Link>
+          <Link to={withContext("/app/dispatch")}>Manage dispatch</Link>
+          <Link to={withContext("/app/chat")}>Chat oversight</Link>
+          <Link to={withContext("/app/delivery-settings")}>Delivery settings</Link>
+          <Link to={withContext("/app/announcements")}>Announcements</Link>
+          <Link to={withContext("/app/support")}>Support inbox</Link>
         </s-stack>
       </s-section>
     </s-page>
