@@ -1,6 +1,6 @@
 export const APP_NAME = "Crush Candy Supplies";
 export const APP_PHASE = "Phase 2 App";
-export const CURRENT_MILESTONE = "Milestone 2 — Driver authentication";
+export const CURRENT_MILESTONE = "Milestone 3 — Authorization hardening";
 
 export const APPROVED_CUSTOMER_TAG = "approved";
 export const ACCESS_CODE_TTL_HOURS = 24;

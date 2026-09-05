@@ -63,6 +63,7 @@ const serverEnvironmentSchema = z.object({
     emptyToUndefined,
     z.coerce.number().int().positive().optional(),
   ),
+  APPROVAL_RECONCILIATION_SECRET: optionalSecret,
 
   EMAIL_PROVIDER: optionalString,
   EMAIL_API_KEY: optionalString,
@@ -144,6 +145,11 @@ export function getDriverSecurityConfig() {
     idleTimeoutMinutes: environment.DRIVER_IDLE_TIMEOUT_MINUTES ?? 120,
     absoluteTimeoutHours: environment.DRIVER_ABSOLUTE_TIMEOUT_HOURS ?? 12,
   } as const;
+}
+
+export function getInternalSecurityConfig() {
+  const environment = getServerEnvironment();
+  return { approvalReconciliationSecret: environment.APPROVAL_RECONCILIATION_SECRET } as const;
 }
 
 export function getSafeRuntimeSummary() {

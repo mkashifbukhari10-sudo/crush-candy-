@@ -3,7 +3,7 @@
 This is the custom, single-merchant Shopify app described by
 `../PHASE2-ARCHITECTURE-PLAN.md`. The architecture plan is locked.
 
-Current implementation: **Milestone 2 — private customer access + driver authentication**. M2 adds app-owned Argon2id credentials, opaque sessions, activation/reset flows, admin driver management, and the standalone driver portal shell. Dispatch, chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
+Current implementation: **Milestone 3 — authorization hardening**. M3 adds explicit plane boundaries, principal-bound resource authorization, fail-closed IDOR protection, internal-secret verification, and cross-plane security tests. Dispatch, chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
 
 ## Runtime stack
 
