@@ -20,23 +20,40 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await requireAdmin(request);
+  console.info("ACCESS_CODE_ACTION_ENTRY", { method: request.method, path: new URL(request.url).pathname });
+  console.info("ACCESS_CODE_AUTH_START");
+  let session: Awaited<ReturnType<typeof requireAdmin>>["session"];
+  try {
+    ({ session } = await requireAdmin(request));
+  } catch (error) {
+    console.error("ACCESS_CODE_AUTH_FAILED", { error: error instanceof Error ? error.name : "unknown" });
+    throw error;
+  }
+  console.info("ACCESS_CODE_AUTH_OK");
+  console.info("ACCESS_CODE_FORMDATA_START");
   const formData = await request.formData();
+  console.info("ACCESS_CODE_FORMDATA_OK");
   // Normalize FormData explicitly: embedded browser/web-component submissions
   // can include extra fields, but the action contract only needs these values.
   const intent = String(formData.get("intent") ?? "");
   const id = String(formData.get("id") ?? "");
+  console.info("ACCESS_CODE_INTENT_NORMALIZED", { intent, hasId: Boolean(id) });
   const parsed = actionInput.safeParse(intent === "revoke" ? { intent, id } : { intent });
   if (!parsed.success) {
+    console.info("ACCESS_CODE_VALIDATION_FAILED");
     return { created: null, message: "Choose a valid access-code action and try again." };
   }
+  console.info("ACCESS_CODE_VALIDATION_OK");
   const input = parsed.data;
   const adminId =
     session.onlineAccessInfo?.associated_user.id.toString() ?? session.id;
 
   if (input.intent === "generate") {
+    console.info("ACCESS_CODE_GENERATION_START");
     try {
       const created = await createAccessCode(adminId);
+      console.info("ACCESS_CODE_GENERATION_OK");
+      console.info("ACCESS_CODE_RESPONSE");
       return {
         created,
         message: "Access code generated. Copy it now; it will not be shown again.",
@@ -51,6 +68,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const revoked = await revokeAccessCode(input.id, adminId);
+  console.info("ACCESS_CODE_RESPONSE");
   return {
     created: null,
     message: revoked
