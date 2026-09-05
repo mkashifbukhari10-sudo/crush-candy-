@@ -18,6 +18,20 @@ export class PlaneUnavailableError extends Error {
   }
 }
 
+export class CustomerAuthenticationError extends Error {
+  constructor(message = "Customer authentication required") {
+    super(message);
+    this.name = "CustomerAuthenticationError";
+  }
+}
+
+export class CustomerAuthorizationError extends Error {
+  constructor(message = "Approved customer access required") {
+    super(message);
+    this.name = "CustomerAuthorizationError";
+  }
+}
+
 export function safeInternalErrorResponse(requestId: string): Response {
   return Response.json(
     {
@@ -30,4 +44,3 @@ export function safeInternalErrorResponse(requestId: string): Response {
     },
   );
 }
-

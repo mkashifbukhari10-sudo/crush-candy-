@@ -32,3 +32,80 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+enum ApprovalSource {
+  ACCESS_CODE
+  ADMIN_MANUAL
+  MIGRATION
+}
+
+enum AccessCodeStatus {
+  ACTIVE
+  CLAIMED
+  REDEEMED
+  REVOKED
+}
+
+model CustomerProfile {
+  id                       String          @id @default(cuid())
+  shopifyCustomerId        String          @unique
+  approvedAt               DateTime?
+  approvalSource           ApprovalSource?
+  accessCodeUsedId         String?         @unique
+  approvalRevokedAt        DateTime?
+  lastShopifyTagObservedAt DateTime?
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  accessCodeUsed AccessCode? @relation("CustomerApprovalCode", fields: [accessCodeUsedId], references: [id], onDelete: SetNull)
+
+  @@index([approvedAt])
+}
+
+model AccessCode {
+  id                   String           @id @default(cuid())
+  codeHash             String           @unique
+  codeLast4            String
+  createdByAdminId     String
+  expiresAt            DateTime
+  status               AccessCodeStatus @default(ACTIVE)
+  claimedAt            DateTime?
+  claimedByCustomerId  String?
+  redeemedAt           DateTime?
+  redeemedByCustomerId String?
+  revokedAt            DateTime?
+  revokedBy            String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  approvedCustomer CustomerProfile? @relation("CustomerApprovalCode")
+
+  @@index([status, expiresAt])
+  @@index([redeemedByCustomerId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorPlane String
+  actorId    String
+  action     String
+  targetType String
+  targetId   String
+  payload    Json
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorPlane, actorId, createdAt])
+  @@index([action, createdAt])
+}
+
+model RateLimitBucket {
+  keyHash   String   @id
+  count     Int
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}

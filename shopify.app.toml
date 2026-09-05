@@ -7,7 +7,7 @@ name = "Crush Candy Supplies"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = ""
+scopes = "write_customers,write_app_proxy"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 
@@ -26,8 +26,17 @@ api_version = "2026-07"
   uri = "/webhooks/compliance"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customer/tags"
+  topics = [ "customer.tags_added", "customer.tags_removed" ]
+
 [auth]
 redirect_urls = [ "https://crush-candy-production.up.railway.app/auth/callback" ]
+
+[app_proxy]
+url = "/apps/portal"
+prefix = "apps"
+subpath = "portal"
 
 [build]
 automatically_update_urls_on_dev = true

@@ -17,6 +17,12 @@ export interface RateLimiter {
   ): Promise<RateLimitResult>;
 }
 
-// The Postgres-backed adapter is DEFERRED TO M2. Defining the contract now keeps
-// rate limiting plane-specific and prevents auth code from binding to a vendor.
+export class RateLimitExceededError extends Error {
+  readonly retryAfterSeconds: number;
 
+  constructor(retryAfterSeconds: number) {
+    super("Too many attempts");
+    this.name = "RateLimitExceededError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

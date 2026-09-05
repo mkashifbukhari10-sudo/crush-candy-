@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createHmac } from "node:crypto";
 
 import { CURRENT_MILESTONE } from "./constants";
 import { AppConfigurationError } from "../lib/errors.server";
@@ -47,6 +48,7 @@ const serverEnvironmentSchema = z.object({
   ),
   SHOP_CUSTOM_DOMAIN: optionalString,
 
+  ACCESS_CODE_HASH_SECRET: optionalSecret,
   CUSTOMER_CSRF_SECRET: optionalSecret,
   DRIVER_CSRF_SECRET: optionalSecret,
   DRIVER_SESSION_COOKIE_NAME: z.preprocess(
@@ -95,17 +97,36 @@ export function getServerEnvironment(): ServerEnvironment {
 
 export function getShopifyRuntimeConfig() {
   const environment = getServerEnvironment();
+  const configuredScopes = environment.SCOPES.split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean);
 
   return {
     apiKey: environment.SHOPIFY_API_KEY,
     apiSecretKey: environment.SHOPIFY_API_SECRET,
     appUrl: environment.SHOPIFY_APP_URL,
-    scopes: environment.SCOPES.split(",")
-      .map((scope) => scope.trim())
-      .filter(Boolean),
+    scopes:
+      configuredScopes.length > 0
+        ? configuredScopes
+        : ["write_customers", "write_app_proxy"],
     customShopDomains: environment.SHOP_CUSTOM_DOMAIN
       ? [environment.SHOP_CUSTOM_DOMAIN]
       : undefined,
+  } as const;
+}
+
+export function getCustomerSecurityConfig() {
+  const environment = getServerEnvironment();
+  const derive = (purpose: string) =>
+    createHmac("sha256", environment.SHOPIFY_API_SECRET)
+      .update(`crush-candy-m1:${purpose}`, "utf8")
+      .digest("hex");
+
+  return {
+    accessCodeHashSecret:
+      environment.ACCESS_CODE_HASH_SECRET ?? derive("access-code-hash"),
+    customerCsrfSecret:
+      environment.CUSTOMER_CSRF_SECRET ?? derive("customer-csrf"),
   } as const;
 }
 

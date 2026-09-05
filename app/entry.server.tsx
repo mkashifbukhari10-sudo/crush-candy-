@@ -7,6 +7,9 @@ import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import { logger } from "./lib/logger.server";
 import { getRequestId } from "./lib/request-context.server";
+import { startApprovalReconciliationScheduler } from "./services/customer/approval-reconciliation.server";
+
+startApprovalReconciliationScheduler();
 
 export const streamTimeout = 5000;
 
