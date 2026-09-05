@@ -217,7 +217,30 @@ model AppSettings {
   id                 String   @id @default("singleton")
   autoAssignEnabled  Boolean  @default(false)
   autoAssignDriverId String?
+  processingWindowHours Int @default(24)
+  minDeliverySpendCents Int @default(25000)
+  deliveryEnabled Boolean @default(true)
+  distanceMethod DistanceMethod?
+  kmRoundingMode KmRounding?
+  baseLatitude Decimal?
+  baseLongitude Decimal?
+  tierUnder25Cents Int @default(5000)
+  tier25To40Cents Int @default(7500)
+  tier40To55Cents Int @default(12000)
+  over55BaseCents Int @default(12000)
+  over55PerKmCents Int @default(300)
   updatedAt          DateTime @updatedAt
+}
+
+enum DistanceMethod {
+  STRAIGHT_LINE
+  DRIVING
+}
+enum KmRounding {
+  EXACT
+  CEIL
+  FLOOR
+  NEAREST
 }
 
 enum ConversationKind {

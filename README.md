@@ -3,7 +3,7 @@
 This is the custom, single-merchant Shopify app described by
 `../PHASE2-ARCHITECTURE-PLAN.md`. The architecture plan is locked.
 
-Current implementation: **Milestone 5 — secure order chat**. M5 adds reassignment-safe customer/driver conversations, Admin oversight, unread state, SSE, and authenticated fallback polling. Commerce rules, content/support, and launch hardening remain intentionally unimplemented.
+Current implementation: **Milestone 6 — delivery pricing**. M6 adds configurable AUD delivery tiers, minimum-order rules, private-origin distance calculation boundaries, and the Carrier Service/fallback foundation. Loyalty, content/support, and launch hardening remain intentionally unimplemented.
 
 ## Runtime stack
 

@@ -1,0 +1,5 @@
+import type { LoaderFunctionArgs } from "react-router";
+import { authenticateCustomerProxy } from "../auth/customer.server";
+import { getCustomerApprovalState } from "../services/customer/approval.server";
+import { getDeliverySettings } from "../services/delivery.server";
+export async function loader({ request }: LoaderFunctionArgs) { const context = await authenticateCustomerProxy(request); if (!context.shopifyCustomerId) return Response.json({ authenticated: false }, { status: 401, headers: { "cache-control": "no-store" } }); if (!(await getCustomerApprovalState(context.admin, context.shopifyCustomerId)).approved) return Response.json({ approved: false }, { status: 403, headers: { "cache-control": "no-store" } }); const s = await getDeliverySettings(); return Response.json({ approved: true, currency: "AUD", minimumOrderCents: s?.minDeliverySpendCents ?? 25000, tiers: [{ underKm: 25, cents: s?.tierUnder25Cents ?? 5000 }, { upToKm: 40, cents: s?.tier25To40Cents ?? 7500 }, { upToKm: 55, cents: s?.tier40To55Cents ?? 12000 }] }, { headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } }); }

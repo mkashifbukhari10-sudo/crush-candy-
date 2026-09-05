@@ -1,6 +1,6 @@
 export const APP_NAME = "Crush Candy Supplies";
 export const APP_PHASE = "Phase 2 App";
-export const CURRENT_MILESTONE = "Milestone 5 — Secure order chat";
+export const CURRENT_MILESTONE = "Milestone 6 — Delivery pricing";
 
 export const APPROVED_CUSTOMER_TAG = "approved";
 export const ACCESS_CODE_TTL_HOURS = 24;
