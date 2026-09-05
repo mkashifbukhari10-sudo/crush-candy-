@@ -46,10 +46,10 @@ async function maybeAutoAssign(assignmentId: string) {
   if (!driver) return db.assignment.findUniqueOrThrow({ where: { id: assignmentId }, include: { driver: true } });
   return assignOrder({ assignmentId, driverId: driver.id, actorId: "system:auto-assign", actorPlane: "SYSTEM" });
 }
-export async function listAssignments() { return db.assignment.findMany({ include: { driver: { select: { id: true, displayName: true } } }, orderBy: { createdAt: "desc" } }); }
+export async function listAssignments() { return db.assignment.findMany({ include: { driver: { select: { id: true, displayName: true } } }, orderBy: { createdAt: "desc" }, take: 500 }); }
 export async function getAssignmentForDriver(id: string, driverId: string) { return db.assignment.findFirst({ where: { id, driverId, status: { in: ACTIVE_STATUSES } }, include: { driver: true } }); }
-export async function listAssignmentsForDriver(driverId: string) { return db.assignment.findMany({ where: { driverId, status: { in: ACTIVE_STATUSES } }, orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }] }); }
-export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true }, orderBy: { createdAt: "desc" } }); }
+export async function listAssignmentsForDriver(driverId: string) { return db.assignment.findMany({ where: { driverId, status: { in: ACTIVE_STATUSES } }, orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }], take: 200 }); }
+export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 200 }); }
 export async function assignOrder(input: { assignmentId: string; driverId: string | null; actorId: string; actorPlane: "ADMIN" | "CUSTOMER" | "DRIVER" | "SYSTEM" }) {
   return db.$transaction(async (tx) => {
     const current = await tx.assignment.findUnique({ where: { id: input.assignmentId } });

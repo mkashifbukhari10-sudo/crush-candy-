@@ -22,6 +22,9 @@ export default async function handleRequest(
   const requestId = getRequestId(request);
   addDocumentResponseHeaders(request, responseHeaders);
   responseHeaders.set("x-request-id", requestId);
+  responseHeaders.set("x-content-type-options", "nosniff");
+  responseHeaders.set("referrer-policy", "strict-origin-when-cross-origin");
+  responseHeaders.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
   const userAgent = request.headers.get("user-agent");
   const callbackName = isbot(userAgent ?? '')
     ? "onAllReady"
