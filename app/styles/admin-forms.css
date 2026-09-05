@@ -1,4 +1,7 @@
 s-section form label { color: #303030; font-size: 14px; font-weight: 550; }
+s-section form { row-gap: 20px; }
+s-section form.admin-form { display: grid; gap: 20px; }
+s-section form > label { display: grid; gap: 7px; align-content: start; line-height: 1.35; }
 s-section form input:not([type="hidden"]):not([type="checkbox"]),
 s-section form select,
 s-section form textarea { box-sizing: border-box; min-height: 40px; padding: 9px 11px; border: 1px solid #8c9196; border-radius: 6px; background: #fff; color: #202223; font: inherit; }
@@ -6,7 +9,7 @@ s-section form textarea { min-height: 120px; resize: vertical; line-height: 1.45
 s-section form input::placeholder, s-section form textarea::placeholder { color: #6d7175; }
 s-section form input:not([type="hidden"]):focus, s-section form select:focus, s-section form textarea:focus { outline: 3px solid rgba(0, 91, 211, .28); outline-offset: 1px; border-color: #005bd3; }
 s-section form input[type="checkbox"] { width: 18px; height: 18px; accent-color: #005bd3; }
-s-section form .field-help { color: #616161; font-size: 13px; font-weight: 400; }
+s-section form .field-help { margin-top: 2px; color: #616161; font-size: 13px; font-weight: 400; line-height: 1.4; }
 s-section form .field-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 s-section form .field-row > label { flex: 1 1 220px; }
 
@@ -37,11 +40,13 @@ s-page[heading="Dispatch"] s-section > form > label:nth-of-type(2) {
   gap: 8px;
   min-height: 40px;
 }
+s-page[heading="Dispatch"] s-section > form > s-button { align-self: end; }
 s-page[heading="Dispatch"] s-section > form > label:nth-of-type(2) input { flex: 0 0 auto; }
 s-page[heading="Delivery settings"] s-section > form { display: block; }
 s-page[heading="Delivery settings"] s-section > form > div + div { display: flex; flex-wrap: wrap; gap: 16px; }
 s-page[heading="Delivery settings"] s-section > form > div + div > label { flex: 1 1 240px; }
 s-page[heading="Delivery settings"] s-section > form > div:last-child { margin-top: 18px; }
+s-page[heading="Delivery settings"] s-section > form > div:first-child { margin-bottom: 20px; }
 
 @media (max-width: 640px) {
   s-section form input:not([type="hidden"]):not([type="checkbox"]),
