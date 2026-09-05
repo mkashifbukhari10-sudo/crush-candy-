@@ -53,6 +53,24 @@ export async function redactCustomerM1Data(payload: unknown): Promise<void> {
       where: { targetId: shopifyCustomerId },
       data: { targetId: pseudonym },
     });
+    const tickets = await transaction.supportTicket.findMany({
+      where: { shopifyCustomerId },
+      select: { id: true },
+    });
+    if (tickets.length > 0) {
+      const ticketIds = tickets.map((ticket) => ticket.id);
+      await transaction.supportTicket.updateMany({
+        where: { id: { in: ticketIds } },
+        data: {
+          shopifyCustomerId: pseudonym,
+          initialMessage: "[redacted]",
+        },
+      });
+      await transaction.supportMessage.updateMany({
+        where: { ticketId: { in: ticketIds }, senderPlane: "CUSTOMER" },
+        data: { senderId: pseudonym, body: "[redacted]" },
+      });
+    }
     await appendAuditLog(transaction, {
       actorPlane: "SYSTEM",
       actorId: "shopify-compliance",
