@@ -34,6 +34,7 @@ export default function Index() {
             <s-text>{status.environment}</s-text>
           </s-stack>
           <Link to="/app/access-codes">Manage private-store access codes</Link>
+          <Link to="/app/drivers">Manage driver accounts</Link>
         </s-stack>
       </s-section>
     </s-page>

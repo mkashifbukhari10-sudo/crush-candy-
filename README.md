@@ -3,11 +3,7 @@
 This is the custom, single-merchant Shopify app described by
 `../PHASE2-ARCHITECTURE-PLAN.md`. The architecture plan is locked.
 
-Current implementation: **Milestone 1 — private customer access**. M1 adds the
-Shopify `approved` tag boundary, one-time access codes, App Proxy onboarding,
-tag reconciliation, compliance redaction, and the Dawn layout gate. Driver
-authentication, dispatch, chat, commerce rules, content/support, and launch
-hardening remain intentionally unimplemented.
+Current implementation: **Milestone 2 — private customer access + driver authentication**. M2 adds app-owned Argon2id credentials, opaque sessions, activation/reset flows, admin driver management, and the standalone driver portal shell. Dispatch, chat, commerce rules, content/support, and launch hardening remain intentionally unimplemented.
 
 ## Runtime stack
 
@@ -58,8 +54,7 @@ npm run lint
 npm run build
 ```
 
-Vitest covers M1 security primitives. The opt-in database integration suite
-exercises the real PostgreSQL claim/finalize lifecycle without calling Shopify:
+Vitest covers M1/M2 security primitives. The opt-in database integration suite exercises the real PostgreSQL customer claim/finalize and driver-auth lifecycles without calling Shopify:
 
 ```powershell
 $env:RUN_DATABASE_TESTS='1'
@@ -93,7 +88,7 @@ is persisted or logged.
 
 Reserved and validated only when configured:
 
-- `DRIVER_CSRF_SECRET` and `DRIVER_*` session settings — `DEFERRED TO M2`
+- `DRIVER_CSRF_SECRET` and `DRIVER_*` session settings — active for M2; use independent production values
 - `SHOPIFY_STORE_DOMAIN` — expected canonical single-store domain when enforced
 - `SHOP_CUSTOM_DOMAIN` — optional custom shop-domain adapter support
 - `EMAIL_*` — `DEFERRED TO M4`
@@ -107,8 +102,8 @@ provider selections and do not resolve any open client decision.
 
 The generated SQLite schema was replaced at M0. The PostgreSQL baseline keeps
 the `Session` table required by Shopify's Prisma session adapter unchanged. M1
-adds `CustomerProfile`, `AccessCode`, `AuditLog`, and `RateLimitBucket` without
-duplicating Shopify customer PII.
+adds customer access sidecars, and M2 adds `DriverAccount`, `Driver`,
+`DriverSession`, and `DriverAuthEvent` without duplicating Shopify identity.
 
 The ignored `prisma/dev.sqlite` file can be retained temporarily as a local
 backup, but it is not read by the app. Existing development sessions are not

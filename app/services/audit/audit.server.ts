@@ -3,7 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 type AuditClient = Pick<PrismaClient, "auditLog"> | Prisma.TransactionClient;
 
 export interface AuditEvent {
-  actorPlane: "ADMIN" | "CUSTOMER" | "SYSTEM";
+  actorPlane: "ADMIN" | "CUSTOMER" | "DRIVER" | "SYSTEM";
   actorId: string;
   action: string;
   targetType: string;

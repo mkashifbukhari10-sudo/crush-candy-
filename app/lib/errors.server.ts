@@ -32,6 +32,30 @@ export class CustomerAuthorizationError extends Error {
   }
 }
 
+export class DriverAuthenticationError extends Error {
+  constructor(message = "Driver authentication required") {
+    super(message);
+    this.name = "DriverAuthenticationError";
+  }
+}
+
+export class DriverAuthorizationError extends Error {
+  constructor(message = "Active driver access required") {
+    super(message);
+    this.name = "DriverAuthorizationError";
+  }
+}
+
+export class DriverRateLimitError extends Error {
+  readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super("Too many authentication attempts");
+    this.name = "DriverRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
 export function safeInternalErrorResponse(requestId: string): Response {
   return Response.json(
     {

@@ -130,6 +130,22 @@ export function getCustomerSecurityConfig() {
   } as const;
 }
 
+export function getDriverSecurityConfig() {
+  const environment = getServerEnvironment();
+  const derive = (purpose: string) =>
+    createHmac("sha256", environment.SHOPIFY_API_SECRET)
+      .update(`crush-candy-m2:${purpose}`, "utf8")
+      .digest("hex");
+
+  return {
+    csrfSecret: environment.DRIVER_CSRF_SECRET ?? derive("driver-csrf"),
+    tokenSecret: derive("driver-token"),
+    cookieName: environment.DRIVER_SESSION_COOKIE_NAME ?? "__Host-ccs_driver",
+    idleTimeoutMinutes: environment.DRIVER_IDLE_TIMEOUT_MINUTES ?? 120,
+    absoluteTimeoutHours: environment.DRIVER_ABSOLUTE_TIMEOUT_HOURS ?? 12,
+  } as const;
+}
+
 export function getSafeRuntimeSummary() {
   const environment = getServerEnvironment();
 

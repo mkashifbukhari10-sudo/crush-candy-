@@ -109,3 +109,85 @@ model RateLimitBucket {
 
   @@index([resetAt])
 }
+
+enum DriverStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model DriverAccount {
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  passwordHash        String?
+  status              DriverStatus @default(INVITED)
+  activationTokenHash String?      @unique
+  activationExpiresAt DateTime?
+  resetTokenHash      String?      @unique
+  resetExpiresAt      DateTime?
+  passwordChangedAt   DateTime?
+  failedLoginCount    Int          @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  createdByAdminId    String
+  deactivatedAt       DateTime?
+  deactivatedBy       String?
+  deactivationReason  String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  driver   Driver?
+  sessions DriverSession[]
+  events   DriverAuthEvent[]
+
+  @@index([status])
+  @@index([lockedUntil])
+}
+
+model Driver {
+  id          String        @id @default(cuid())
+  accountId   String        @unique
+  account     DriverAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  displayName String
+  phone       String?
+  vehicleNote String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([displayName])
+}
+
+model DriverSession {
+  id                String        @id @default(cuid())
+  accountId         String
+  account           DriverAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenHash         String        @unique
+  issuedAt          DateTime      @default(now())
+  lastSeenAt        DateTime      @default(now())
+  absoluteExpiresAt DateTime
+  idleExpiresAt     DateTime
+  revokedAt         DateTime?
+  revokedReason     String?
+  ip                String?
+  userAgent         String?
+
+  @@index([accountId, revokedAt])
+  @@index([absoluteExpiresAt])
+  @@index([idleExpiresAt])
+}
+
+model DriverAuthEvent {
+  id         String         @id @default(cuid())
+  accountId  String?
+  account    DriverAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  type       String
+  emailTried String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime       @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([type, createdAt])
+}
