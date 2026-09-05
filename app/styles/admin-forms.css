@@ -10,8 +10,49 @@ s-section form .field-help { color: #616161; font-size: 13px; font-weight: 400; 
 s-section form .field-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 s-section form .field-row > label { flex: 1 1 220px; }
 
+/* Page-level layouts keep controls aligned while leaving every form action untouched. */
+s-page[heading="Drivers"] s-section > form.admin-form,
+s-page[heading="Announcements"] s-section > form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 760px;
+  align-items: end;
+}
+s-page[heading="Announcements"] s-section > form > label:nth-of-type(3) { grid-column: 1 / -1; }
+s-page[heading="Announcements"] s-section > form > div { grid-column: 1 / -1; }
+s-page[heading="Chat oversight"] s-section > form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  max-width: 760px;
+}
+s-page[heading="Chat oversight"] s-section > form > label { min-width: 0; }
+s-page[heading="Dispatch"] s-section > form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+s-page[heading="Dispatch"] s-section > form > label:nth-of-type(2) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+s-page[heading="Dispatch"] s-section > form > label:nth-of-type(2) input { flex: 0 0 auto; }
+s-page[heading="Delivery settings"] s-section > form { display: block; }
+s-page[heading="Delivery settings"] s-section > form > div + div { display: flex; flex-wrap: wrap; gap: 16px; }
+s-page[heading="Delivery settings"] s-section > form > div + div > label { flex: 1 1 240px; }
+s-page[heading="Delivery settings"] s-section > form > div:last-child { margin-top: 18px; }
+
 @media (max-width: 640px) {
   s-section form input:not([type="hidden"]):not([type="checkbox"]),
   s-section form select,
   s-section form textarea { width: 100%; max-width: 100%; }
+  s-page[heading="Drivers"] s-section > form.admin-form,
+  s-page[heading="Announcements"] s-section > form,
+  s-page[heading="Chat oversight"] s-section > form,
+  s-page[heading="Dispatch"] s-section > form { grid-template-columns: 1fr; }
+  s-page[heading="Announcements"] s-section > form > label,
+  s-page[heading="Announcements"] s-section > form > div,
+  s-page[heading="Chat oversight"] s-section > form > label,
+  s-page[heading="Chat oversight"] s-section > form > a { grid-column: 1; }
 }
