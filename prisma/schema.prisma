@@ -425,3 +425,13 @@ model DriverAuthEvent {
   @@index([accountId, createdAt])
   @@index([type, createdAt])
 }
+
+model DeliveryDistanceCache {
+  keyHash    String   @id
+  distanceKm Decimal  @db.Decimal(10, 3)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+}

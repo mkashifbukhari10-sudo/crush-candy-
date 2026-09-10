@@ -68,7 +68,13 @@ const serverEnvironmentSchema = z.object({
   EMAIL_PROVIDER: optionalString,
   EMAIL_API_KEY: optionalString,
   EMAIL_FROM: z.preprocess(emptyToUndefined, z.email().optional()),
-  DISTANCE_PROVIDER: optionalString,
+  // Normalised here; the supported value ("google") is enforced in the distance provider so a
+  // delivery misconfiguration degrades to "no rate" instead of failing app boot for every plane.
+  DISTANCE_PROVIDER: z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() !== "" ? value.trim().toLowerCase() : undefined,
+    z.string().min(1).optional(),
+  ),
   DISTANCE_API_KEY: optionalString,
   DELIVERY_ORIGIN_LATITUDE: optionalString,
   DELIVERY_ORIGIN_LONGITUDE: optionalString,
