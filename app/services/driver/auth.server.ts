@@ -193,3 +193,66 @@ export function requireDriverCsrf(request: Request, auth: DriverRequestContext, 
     throw new DriverAuthorizationError("CSRF validation failed.");
   }
 }
+
+export class DriverPasswordChangeError extends Error {
+  readonly reason: "INVALID_CURRENT" | "WEAK_PASSWORD" | "SAME_PASSWORD";
+
+  constructor(reason: DriverPasswordChangeError["reason"], message?: string) {
+    super(message ?? reason);
+    this.name = "DriverPasswordChangeError";
+    this.reason = reason;
+  }
+}
+
+/**
+ * Changes the signed-in driver's password. Every other session is revoked and the current device
+ * is re-issued a fresh session, so the driver stays signed in here while any stolen session
+ * elsewhere dies. Password values are never logged, audited or returned.
+ */
+export async function changeDriverPassword(input: {
+  auth: DriverRequestContext;
+  currentPassword: string;
+  newPassword: string;
+  request: Request;
+}): Promise<Headers> {
+  const accountId = input.auth.context.accountId;
+  await consumeAuthBucket("driver-password-change", accountId, 5, 15 * 60);
+
+  const account = await db.driverAccount.findUnique({ where: { id: accountId }, include: { driver: true } });
+  if (!account || account.status !== "ACTIVE") throw new DriverAuthenticationError();
+
+  if (!(await verifyDriverPassword(account.passwordHash, input.currentPassword))) {
+    await db.driverAuthEvent.create({ data: { accountId, type: "PASSWORD_CHANGE_FAIL", ...authEventData(input.request) } });
+    throw new DriverPasswordChangeError("INVALID_CURRENT");
+  }
+  // Checked before hashing so an unchanged password cannot silently rotate the hash.
+  if (await verifyDriverPassword(account.passwordHash, input.newPassword)) {
+    throw new DriverPasswordChangeError("SAME_PASSWORD");
+  }
+
+  let passwordHash: string;
+  try {
+    // hashDriverPassword applies the same policy and Argon2id parameters as activation and reset.
+    passwordHash = await hashDriverPassword(input.newPassword);
+  } catch {
+    throw new DriverPasswordChangeError("WEAK_PASSWORD");
+  }
+
+  const now = new Date();
+  const session = await db.$transaction(async (tx) => {
+    const updated = await tx.driverAccount.updateMany({
+      where: { id: accountId, status: "ACTIVE", passwordHash: account.passwordHash },
+      data: { passwordHash, passwordChangedAt: now, failedLoginCount: 0, lockedUntil: null, resetTokenHash: null, resetExpiresAt: null },
+    });
+    // A concurrent change already rotated the hash; do not overwrite it.
+    if (updated.count !== 1) throw new DriverPasswordChangeError("INVALID_CURRENT");
+
+    await tx.driverSession.updateMany({ where: { accountId, revokedAt: null }, data: { revokedAt: now, revokedReason: "PASSWORD_CHANGE" } });
+    await tx.driverAuthEvent.create({ data: { accountId, type: "PASSWORD_CHANGE_OK", ...authEventData(input.request) } });
+    await appendAuditLog(tx, { actorPlane: "DRIVER", actorId: input.auth.context.driverId, action: "DRIVER_PASSWORD_CHANGED", targetType: "DriverAccount", targetId: accountId, payload: { sessionsRevoked: true } });
+
+    return createSessionWithClient(tx, account, input.request);
+  });
+
+  return session.responseHeaders;
+}

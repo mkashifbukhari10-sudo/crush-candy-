@@ -23,6 +23,7 @@ const AREAS = [
   ["/driver/scheduled", "Scheduled deliveries", "Future deliveries grouped by date."],
   ["/driver/chat", "Delivery chats", "Arrival and drop-off messages."],
   ["/driver/notice", "Driver notices", "Announcements for drivers."],
+  ["/driver/account", "Account and security", "Change your password."],
 ] as const;
 
 const unreadBadge = {
