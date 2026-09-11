@@ -17,3 +17,8 @@ export const DRIVER_LOGIN_MAX_FAILURES = 8;
 export const DRIVER_LOGIN_LOCK_MINUTES = 15;
 export const DRIVER_MIN_PASSWORD_LENGTH = 12;
 export const DRIVER_SESSION_COOKIE = "__Host-ccs_driver";
+
+// Temporary delivery-architecture proof of concept. Shared so the admin page can display the tag
+// without importing the server-only module into the client bundle.
+export const POC_DRAFT_TAG = "CCS-DELIVERY-POC-TEST";
+export const POC_DRAFT_NOTE = "TEST — delivery architecture proof of concept. Do not fulfil.";
