@@ -42,7 +42,7 @@ describe("driver navigation is complete and current", () => {
   const home = read("driver._index.tsx");
 
   it("no longer advertises shipped features as unbuilt", () => {
-    for (const file of ["driver._index.tsx", "driver.upcoming.tsx", "driver.chat.tsx", "driver.notice.tsx"]) {
+    for (const file of ["driver._index.tsx", "driver.upcoming._index.tsx", "driver.upcoming.$id.tsx", "driver.chat.tsx", "driver.notice.tsx"]) {
       expect(read(file)).not.toMatch(/coming in M3/i);
     }
   });
@@ -87,19 +87,20 @@ describe("driver error handling stays inside the driver plane", () => {
 
 describe("security boundaries are untouched", () => {
   it("keeps requireDriver on every authenticated driver route", () => {
-    for (const file of ["driver._index.tsx", "driver.upcoming.tsx", "driver.chat.tsx", "driver.chat.$id.tsx", "driver.notice.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
+    for (const file of ["driver._index.tsx", "driver.upcoming._index.tsx", "driver.upcoming.$id.tsx", "driver.chat.tsx", "driver.chat.$id.tsx", "driver.notice.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
       expect(read(file)).toContain("requireDriver");
     }
   });
 
   it("keeps CSRF enforcement on every driver mutation", () => {
-    for (const file of ["driver.chat.$id.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
+    for (const file of ["driver.chat.$id.tsx", "driver.upcoming.$id.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
       expect(read(file)).toContain("requireDriverCsrf");
     }
   });
 
   it("keeps driver-scoped queries", () => {
-    expect(read("driver.upcoming.tsx")).toContain("auth.context.driverId");
+    expect(read("driver.upcoming._index.tsx")).toContain("auth.context.driverId");
+    expect(read("driver.upcoming.$id.tsx")).toContain("auth.context.driverId");
     expect(read("driver.chat.tsx")).toContain("auth.context.driverId");
     expect(read("driver.chat.$id.tsx")).toContain("auth.context.driverId");
   });

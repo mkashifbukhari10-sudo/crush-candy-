@@ -193,8 +193,13 @@ model Assignment {
   cancelledAt        DateTime?
   cancellationReason String?
   lineItems          Json?
+  // Delivery-facing fields only. No customer email, phone, surname or billing address.
+  destinationAddress1 String?
+  destinationAddress2 String?
   destinationCity    String?
   destinationPostcode String?
+  deliveryNotes      String?
+  customerFirstName  String?
   driverId           String?
   driver             Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
   conversations      Conversation[]

@@ -24,15 +24,31 @@ function orderPayload(payload: unknown) {
   const customer = customerGid(p.customer);
   const lineItems = Array.isArray(p.line_items) ? p.line_items.map((item) => { const i = item as Record<string, unknown>; const variant = i.variant && typeof i.variant === "object" ? i.variant as Record<string, unknown> : {}; const rawWeight = i.weight ?? variant.weight; const rawUnit = i.weight_unit ?? variant.weight_unit; const grams = Number(i.grams ?? (typeof rawWeight === "number" ? rawWeight : 0)); return { title: typeof i.title === "string" ? i.title : "Item", quantity: Number(i.quantity) || 0, sku: typeof i.sku === "string" ? i.sku : null, weightGrams: Number.isFinite(grams) ? grams : 0, weightValue: typeof rawWeight === "number" ? rawWeight : null, weightUnit: typeof rawUnit === "string" ? rawUnit : "g" }; }) : [];
   const address = p.shipping_address && typeof p.shipping_address === "object" ? p.shipping_address as Record<string, unknown> : {};
-  return { id, orderNumber: String(p.name ?? p.order_number ?? p.id), customer, lineItems, city: typeof address.city === "string" ? address.city : null, postcode: typeof address.zip === "string" ? address.zip : null, cancelled: Boolean(p.cancelled_at) };
+  const customerRecord = p.customer && typeof p.customer === "object" ? p.customer as Record<string, unknown> : {};
+  const text = (value: unknown, max: number) => (typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null);
+  return {
+    id,
+    orderNumber: String(p.name ?? p.order_number ?? p.id),
+    customer,
+    lineItems,
+    // Shipping address only. Billing address, email, phone and surname are deliberately dropped.
+    address1: text(address.address1, 255),
+    address2: text(address.address2, 255),
+    city: text(address.city, 120),
+    postcode: text(address.zip, 20),
+    // The Shopify order note is the only drop-note source the webhook provides.
+    deliveryNotes: text(p.note, 1000),
+    customerFirstName: text(address.first_name, 80) ?? text(customerRecord.first_name, 80),
+    cancelled: Boolean(p.cancelled_at),
+  };
 }
 
 export async function syncShopifyOrder(payload: unknown, actorId = "shopify-webhook") {
   const order = orderPayload(payload); const now = new Date();
   const existing = await db.assignment.findUnique({ where: { shopifyOrderId: order.id } });
-  if (existing) return db.assignment.update({ where: { id: existing.id }, data: { shopifyOrderNumber: order.orderNumber, shopifyCustomerId: order.customer, lineItems: order.lineItems, destinationCity: order.city, destinationPostcode: order.postcode, ...(order.cancelled && !["DELIVERED", "FAILED"].includes(existing.status) ? { status: "CANCELLED", cancelledAt: now, cancellationReason: "Shopify order cancelled" } : {}) } });
+  if (existing) return db.assignment.update({ where: { id: existing.id }, data: { shopifyOrderNumber: order.orderNumber, shopifyCustomerId: order.customer, lineItems: order.lineItems, destinationAddress1: order.address1, destinationAddress2: order.address2, destinationCity: order.city, destinationPostcode: order.postcode, deliveryNotes: order.deliveryNotes, customerFirstName: order.customerFirstName, ...(order.cancelled && !["DELIVERED", "FAILED"].includes(existing.status) ? { status: "CANCELLED", cancelledAt: now, cancellationReason: "Shopify order cancelled" } : {}) } });
   const created = await db.$transaction(async (tx) => {
-    const assignment = await tx.assignment.create({ data: { shopifyOrderId: order.id, shopifyOrderNumber: order.orderNumber, shopifyCustomerId: order.customer, lineItems: order.lineItems, destinationCity: order.city, destinationPostcode: order.postcode, slaDueAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), status: order.cancelled ? "CANCELLED" : "PENDING", cancelledAt: order.cancelled ? now : null } });
+    const assignment = await tx.assignment.create({ data: { shopifyOrderId: order.id, shopifyOrderNumber: order.orderNumber, shopifyCustomerId: order.customer, lineItems: order.lineItems, destinationAddress1: order.address1, destinationAddress2: order.address2, destinationCity: order.city, destinationPostcode: order.postcode, deliveryNotes: order.deliveryNotes, customerFirstName: order.customerFirstName, slaDueAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), status: order.cancelled ? "CANCELLED" : "PENDING", cancelledAt: order.cancelled ? now : null } });
     await tx.assignmentEvent.create({ data: { assignmentId: assignment.id, type: order.cancelled ? "CANCELLED" : "ORDER_SYNCED", actorPlane: "SYSTEM", actorId, metadata: {} } });
     await appendAuditLog(tx, { actorPlane: "SYSTEM", actorId, action: order.cancelled ? "ORDER_CANCELLED" : "ORDER_SYNCED", targetType: "Assignment", targetId: assignment.id, payload: {} });
     return assignment;
