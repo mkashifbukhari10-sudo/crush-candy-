@@ -161,6 +161,11 @@ model Driver {
   @@index([displayName])
 }
 
+enum FulfillmentMode {
+  DELIVERY
+  PICKUP
+}
+
 enum AssignmentStatus {
   PENDING
   ASSIGNED
@@ -177,6 +182,8 @@ model Assignment {
   shopifyOrderNumber String
   shopifyCustomerId  String?
   status             AssignmentStatus @default(PENDING)
+  fulfillmentMode    FulfillmentMode  @default(DELIVERY)
+  pickupElectedAt    DateTime?
   slaDueAt           DateTime
   scheduledFor       DateTime?
   assignedAt         DateTime?
@@ -196,6 +203,7 @@ model Assignment {
   updatedAt          DateTime         @updatedAt
 
   @@index([driverId, scheduledFor])
+  @@index([fulfillmentMode, status])
   @@index([status, slaDueAt])
   @@index([shopifyCustomerId, createdAt])
 }

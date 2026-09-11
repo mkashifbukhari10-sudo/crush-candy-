@@ -40,6 +40,9 @@ export async function syncShopifyOrder(payload: unknown, actorId = "shopify-webh
   return maybeAutoAssign(created.id);
 }
 async function maybeAutoAssign(assignmentId: string) {
+  const current = await db.assignment.findUnique({ where: { id: assignmentId }, select: { fulfillmentMode: true } });
+  // Pickup replaces delivery, so a pickup order is never auto-assigned to a driver.
+  if (current?.fulfillmentMode === "PICKUP") return db.assignment.findUniqueOrThrow({ where: { id: assignmentId }, include: { driver: true } });
   const settings = await db.appSettings.findUnique({ where: { id: "singleton" } });
   if (!settings?.autoAssignEnabled || !settings.autoAssignDriverId) return db.assignment.findUniqueOrThrow({ where: { id: assignmentId }, include: { driver: true } });
   const driver = await db.driver.findFirst({ where: { id: settings.autoAssignDriverId, account: { status: "ACTIVE" } } });
@@ -47,13 +50,15 @@ async function maybeAutoAssign(assignmentId: string) {
   return assignOrder({ assignmentId, driverId: driver.id, actorId: "system:auto-assign", actorPlane: "SYSTEM" });
 }
 export async function listAssignments() { return db.assignment.findMany({ include: { driver: { select: { id: true, displayName: true } } }, orderBy: { createdAt: "desc" }, take: 500 }); }
-export async function getAssignmentForDriver(id: string, driverId: string) { return db.assignment.findFirst({ where: { id, driverId, status: { in: ACTIVE_STATUSES } }, include: { driver: true } }); }
-export async function listAssignmentsForDriver(driverId: string) { return db.assignment.findMany({ where: { driverId, status: { in: ACTIVE_STATUSES } }, orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }], take: 200 }); }
-export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true, lineItems: true }, orderBy: { createdAt: "desc" }, take: 200 }); }
+export async function getAssignmentForDriver(id: string, driverId: string) { return db.assignment.findFirst({ where: { id, driverId, fulfillmentMode: "DELIVERY", status: { in: ACTIVE_STATUSES } }, include: { driver: true } }); }
+export async function listAssignmentsForDriver(driverId: string) { return db.assignment.findMany({ where: { driverId, fulfillmentMode: "DELIVERY", status: { in: ACTIVE_STATUSES } }, orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }], take: 200 }); }
+export async function listAssignmentsForCustomer(customerId: string) { return db.assignment.findMany({ where: { shopifyCustomerId: customerId }, select: { id: true, shopifyOrderNumber: true, status: true, scheduledFor: true, createdAt: true, lineItems: true, fulfillmentMode: true, pickupElectedAt: true }, orderBy: { createdAt: "desc" }, take: 200 }); }
 export async function assignOrder(input: { assignmentId: string; driverId: string | null; actorId: string; actorPlane: "ADMIN" | "CUSTOMER" | "DRIVER" | "SYSTEM" }) {
   return db.$transaction(async (tx) => {
     const current = await tx.assignment.findUnique({ where: { id: input.assignmentId } });
     if (!current || current.status === "CANCELLED") throw new Error("Assignment unavailable");
+    // Server-side guard: hiding the admin control is not enough on its own.
+    if (current.fulfillmentMode === "PICKUP") throw new Error("Pickup orders are collected by the customer and cannot be assigned to a driver");
     if (input.driverId && !(await tx.driver.findFirst({ where: { id: input.driverId, account: { status: "ACTIVE" } } }))) throw new Error("Driver is not active");
     const nextStatus = input.driverId ? (current.scheduledFor ? "SCHEDULED" : "ASSIGNED") : "PENDING";
     const updated = await tx.assignment.update({ where: { id: current.id }, data: { driverId: input.driverId, assignedAt: input.driverId ? new Date() : null, assignedBy: input.driverId ? input.actorId : null, status: nextStatus } });
@@ -67,6 +72,7 @@ export async function scheduleOrder(input: { assignmentId: string; scheduledFor:
   return db.$transaction(async (tx) => {
     const current = await tx.assignment.findUnique({ where: { id: input.assignmentId } });
     if (!current || !current.driverId || current.status === "CANCELLED") throw new Error("An active assignment is required");
+    if (current.fulfillmentMode === "PICKUP") throw new Error("Pickup orders cannot be scheduled for delivery");
     const updated = await tx.assignment.update({ where: { id: current.id }, data: { scheduledFor: input.scheduledFor, status: "SCHEDULED" } });
     await tx.assignmentEvent.create({ data: { assignmentId: current.id, type: current.scheduledFor ? "RESCHEDULED" : "SCHEDULED", actorPlane: "ADMIN", actorId: input.actorId, metadata: { scheduledFor: input.scheduledFor.toISOString() } } });
     await appendAuditLog(tx, { actorPlane: "ADMIN", actorId: input.actorId, action: current.scheduledFor ? "ORDER_RESCHEDULED" : "ORDER_SCHEDULED", targetType: "Assignment", targetId: current.id, payload: { scheduledFor: input.scheduledFor.toISOString() } });
