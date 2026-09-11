@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { Link, redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
 import { requireDriver } from "../auth/driver.server";
+import { EmptyState, PageHeader, RowLink, UnreadCount, formatDateTime } from "../components/driver/ui";
 import { driverUnreadCounts, listDriverConversations } from "../services/chat.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -23,33 +24,33 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
-const badge = { background: "#a3346a", color: "white", borderRadius: 999, padding: "1px 9px", fontSize: 12, fontWeight: 700, marginLeft: 8 } as const;
-
 export default function DriverChats() {
   const { conversations } = useLoaderData<typeof loader>();
+  const unreadTotal = conversations.reduce((sum, conversation) => sum + conversation.unread, 0);
+
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px" }}>
-      <p><Link to="/driver">← Driver portal</Link></p>
-      <h1>Delivery chats</h1>
+    <>
+      <PageHeader
+        title="Delivery chats"
+        subtitle={unreadTotal > 0 ? `${unreadTotal} unread ${unreadTotal === 1 ? "message" : "messages"}` : "Arrival and drop-off messages."}
+      />
+
       {conversations.length === 0 ? (
-        <p>No active chats.</p>
+        <EmptyState title="No active chats">A chat opens for each delivery assigned to you, and closes once it is delivered.</EmptyState>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
+        <ul className="drv-list">
           {conversations.map((conversation) => (
-            <li key={conversation.id} style={{ background: "white", borderRadius: 12, padding: 16 }}>
-              <Link to={`/driver/chat/${conversation.id}`}><strong>{conversation.orderNumber}</strong></Link>
-              {conversation.unread > 0 ? (
-                <span style={badge} aria-label={`${conversation.unread} unread messages`}>{conversation.unread}</span>
-              ) : null}
-              {conversation.latestAt ? (
-                <div style={{ fontSize: 13, color: "#6b5a64", marginTop: 4 }}>
-                  latest {new Date(conversation.latestAt).toLocaleString("en-AU", { timeZone: "Australia/Perth" })}
-                </div>
-              ) : null}
+            <li key={conversation.id}>
+              <RowLink
+                to={`/driver/chat/${conversation.id}`}
+                title={conversation.orderNumber}
+                badge={conversation.unread > 0 ? <UnreadCount count={conversation.unread} /> : undefined}
+                meta={conversation.latestAt ? `Latest ${formatDateTime(conversation.latestAt)}` : "No messages yet"}
+              />
             </li>
           ))}
         </ul>
       )}
-    </main>
+    </>
   );
 }

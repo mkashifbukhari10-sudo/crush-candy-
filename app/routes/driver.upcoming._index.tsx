@@ -1,6 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { Link, redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
+
 import { requireDriver } from "../auth/driver.server";
+import { EmptyState, PageHeader, RowLink, StatusBadge, formatDateTime } from "../components/driver/ui";
 import { listAssignmentsForDriver } from "../services/dispatch.server";
 
 function itemCount(lineItems: unknown): number {
@@ -31,31 +33,35 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function DriverUpcoming() {
   const { assignments } = useLoaderData<typeof loader>();
+
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "48px 20px" }}>
-      <p><Link to="/driver">← Driver portal</Link></p>
-      <h1>Upcoming deliveries</h1>
+    <>
+      <PageHeader title="Upcoming deliveries" subtitle={assignments.length === 1 ? "1 delivery assigned to you" : `${assignments.length} deliveries assigned to you`} />
+
       {assignments.length === 0 ? (
-        <p>No assigned deliveries.</p>
+        <EmptyState title="Nothing assigned yet">New deliveries appear here as soon as they are assigned to you.</EmptyState>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
+        <ul className="drv-list">
           {assignments.map((order) => (
-            <li key={order.id} style={{ background: "white", borderRadius: 12, padding: 16 }}>
-              <Link to={`/driver/upcoming/${order.id}`}><strong>{order.shopifyOrderNumber}</strong></Link>
-              <div style={{ fontSize: 13, color: "#6b5a64", marginTop: 4 }}>
-                {order.status}
-                {" · "}
-                {order.scheduledFor ? new Date(order.scheduledFor).toLocaleString("en-AU", { timeZone: "Australia/Perth" }) : "not scheduled"}
-              </div>
-              <div style={{ fontSize: 13, color: "#6b5a64" }}>
-                {[order.destinationCity, order.destinationPostcode].filter(Boolean).join(" ") || "Destination pending"}
-                {" · "}
-                {order.items} {order.items === 1 ? "item" : "items"}
-              </div>
+            <li key={order.id}>
+              <RowLink
+                to={`/driver/upcoming/${order.id}`}
+                title={order.shopifyOrderNumber}
+                badge={<StatusBadge status={order.status} />}
+                meta={
+                  <>
+                    {order.scheduledFor ? formatDateTime(order.scheduledFor) : "Not scheduled"}
+                    {" · "}
+                    {[order.destinationCity, order.destinationPostcode].filter(Boolean).join(" ") || "Destination pending"}
+                    {" · "}
+                    {order.items} {order.items === 1 ? "item" : "items"}
+                  </>
+                }
+              />
             </li>
           ))}
         </ul>
       )}
-    </main>
+    </>
   );
 }

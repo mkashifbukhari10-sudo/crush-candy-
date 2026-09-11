@@ -1,8 +1,8 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router";
 
 import { requireDriver } from "../auth/driver.server";
+import { Alert, Card, DetailGroup, Field, PageHeader } from "../components/driver/ui";
 import { DRIVER_MIN_PASSWORD_LENGTH } from "../config/constants";
 import { createDriverCsrfToken } from "../lib/driver-security.server";
 import { DriverRateLimitError } from "../lib/errors.server";
@@ -69,61 +69,55 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
-const field = { display: "grid", gap: 4, fontSize: 13, color: "#6b5a64", marginTop: 12 } as const;
-const input = { padding: "12px", border: "1px solid #ddd3da", borderRadius: 8, font: "inherit", color: "#2e2028", minHeight: 44 } as const;
-
 export default function DriverAccount() {
   const { email, displayName, csrfToken, minLength } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>() as ActionResult | undefined;
   const busy = useNavigation().state !== "idle";
 
   return (
-    <main style={{ maxWidth: 560, margin: "0 auto", padding: "48px 20px" }}>
-      <p><Link to="/driver">← Driver portal</Link></p>
-      <h1>Account and security</h1>
-      <p>{displayName} · {email}</p>
+    <>
+      <PageHeader eyebrow="Account and security" title={displayName} subtitle={email} />
 
-      {result ? (
-        <p
-          role={result.ok ? "status" : "alert"}
-          style={{ background: result.ok ? "#eaf7ee" : "#fdeceb", color: result.ok ? "#1d6b34" : "#8a1c13", borderRadius: 10, padding: "12px 14px" }}
-        >
-          {result.message}
-        </p>
-      ) : null}
+      {result ? <Alert tone={result.ok ? "success" : "error"}>{result.message}</Alert> : null}
 
-      <section style={{ background: "white", borderRadius: 12, padding: 20, marginTop: 16 }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Change password</h2>
-        <p style={{ fontSize: 13, color: "#6b5a64" }}>
-          At least {minLength} characters. Changing it signs out every other device.
-        </p>
+      <Card>
+        <h2 className="drv-card__title">Change password</h2>
+        <p className="drv-card__meta">At least {minLength} characters. Changing it signs out every other device.</p>
+
         <Form method="post" autoComplete="off">
           <input type="hidden" name="csrfToken" value={csrfToken} />
-          <label style={field}>
-            Current password
-            <input style={input} name="currentPassword" type="password" autoComplete="current-password" required />
-          </label>
-          <label style={field}>
-            New password
-            <input style={input} name="newPassword" type="password" autoComplete="new-password" minLength={minLength} required />
-          </label>
-          <label style={field}>
-            Confirm new password
-            <input style={input} name="confirmPassword" type="password" autoComplete="new-password" minLength={minLength} required />
-          </label>
-          <div style={{ marginTop: 18 }}>
-            <button
-              type="submit"
-              disabled={busy}
-              style={{ minHeight: 44, padding: "12px 22px", borderRadius: 8, border: "none", background: "#2e2028", color: "white", font: "inherit", fontWeight: 600, cursor: "pointer" }}
-            >
+          <Field label="Current password">
+            <input className="drv-input" name="currentPassword" type="password" autoComplete="current-password" required />
+          </Field>
+          <Field label="New password" hint={`Minimum ${minLength} characters.`}>
+            <input className="drv-input" name="newPassword" type="password" autoComplete="new-password" minLength={minLength} required />
+          </Field>
+          <Field label="Confirm new password">
+            <input className="drv-input" name="confirmPassword" type="password" autoComplete="new-password" minLength={minLength} required />
+          </Field>
+          <div className="drv-actions">
+            <button type="submit" className="drv-btn drv-btn--primary drv-btn--block" disabled={busy}>
               {busy ? "Saving…" : "Change password"}
             </button>
           </div>
         </Form>
-      </section>
+      </Card>
 
-      <p style={{ marginTop: 24 }}><Link to="/driver/logout-all">Log out everywhere</Link></p>
-    </main>
+      <section className="drv-section">
+        <h2 className="drv-section__title">Sessions</h2>
+        <Card>
+          <DetailGroup label="This device">
+            <p className="drv-detail__value">Signed in as {email}.</p>
+          </DetailGroup>
+          <div className="drv-actions">
+            <Form method="post" action="/driver/logout">
+              <input type="hidden" name="csrfToken" value={csrfToken} />
+              <button type="submit" className="drv-btn drv-btn--secondary drv-btn--block" disabled={busy}>Log out</button>
+            </Form>
+            <Link className="drv-btn drv-btn--secondary drv-btn--block" to="/driver/logout-all">Log out everywhere</Link>
+          </div>
+        </Card>
+      </section>
+    </>
   );
 }

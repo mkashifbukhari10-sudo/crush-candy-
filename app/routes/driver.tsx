@@ -1,19 +1,57 @@
-import { Link, Outlet, isRouteErrorResponse, useRouteError } from "react-router";
+import { Link, NavLink, Outlet, isRouteErrorResponse, useLocation, useRouteError } from "react-router";
 
-const SHELL = { minHeight: "100vh", background: "#f5f1f4", color: "#2e2028", fontFamily: "Arial, sans-serif" } as const;
+import "../styles/driver.css";
+
+/** Public driver pages: signed-out, so they get the shell chrome without navigation. */
+const PUBLIC_PATHS = ["/driver/login", "/driver/activate", "/driver/forgot-password", "/driver/reset-password"];
+
+export function isPublicDriverPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+const NAV = [
+  ["/driver", "Home"],
+  ["/driver/upcoming", "Upcoming"],
+  ["/driver/scheduled", "Scheduled"],
+  ["/driver/chat", "Chat"],
+  ["/driver/notice", "Notices"],
+  ["/driver/account", "Account"],
+] as const;
+
+function DriverNav() {
+  return (
+    <nav className="drv-nav" aria-label="Driver portal">
+      {NAV.map(([to, label]) => (
+        <NavLink key={to} className="drv-nav__item" to={to} end={to === "/driver"}>
+          <span className="drv-nav__label">{label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
 
 export default function DriverLayout() {
+  const signedOut = isPublicDriverPath(useLocation().pathname);
+
   return (
-    <div style={SHELL}>
-      <Outlet />
+    <div className="drv">
+      <div className="drv-shell">
+        <div className="drv-brand">
+          <Link className="drv-brand__mark" to={signedOut ? "/driver/login" : "/driver"}>Crush Candy Supplies</Link>
+          {signedOut ? null : <Link className="drv-brand__link" to="/driver/account">Account</Link>}
+        </div>
+        {signedOut ? null : <DriverNav />}
+        <main className="drv-main">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
 /**
  * Driver-plane error page. Kept inside this route so a failure renders in the driver shell and
- * under this route's security headers, rather than falling through to the generic root boundary.
- * Only the status is shown — never the underlying error.
+ * under this route's security headers. Only the status is shown — never the underlying error.
  */
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -27,15 +65,20 @@ export function ErrorBoundary() {
         : "The request could not be completed. Please try again.";
 
   return (
-    <div style={SHELL}>
-      <main style={{ maxWidth: 760, margin: "0 auto", padding: "48px 20px" }}>
-        <p style={{ textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12 }}>Crush Candy Supplies</p>
-        <h1>{heading}</h1>
-        <p>{detail}</p>
-        <p>
-          <Link to="/driver">Back to driver portal</Link> · <Link to="/driver/login">Sign in</Link>
-        </p>
-      </main>
+    <div className="drv">
+      <div className="drv-shell">
+        <div className="drv-brand">
+          <Link className="drv-brand__mark" to="/driver">Crush Candy Supplies</Link>
+        </div>
+        <main className="drv-main">
+          <h1 className="drv-page__title">{heading}</h1>
+          <p className="drv-page__subtitle">{detail}</p>
+          <div className="drv-actions">
+            <Link className="drv-btn drv-btn--primary" to="/driver">Back to driver portal</Link>
+            <Link className="drv-btn drv-btn--secondary" to="/driver/login">Sign in</Link>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

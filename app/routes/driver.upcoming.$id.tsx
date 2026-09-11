@@ -2,6 +2,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router";
 
 import { requireDriver } from "../auth/driver.server";
+import { Alert, Card, DetailGroup, PageHeader, StatusBadge, formatDateTime } from "../components/driver/ui";
 import { createDriverCsrfToken } from "../lib/driver-security.server";
 import { requireDriverCsrf } from "../services/driver/auth.server";
 import type { DriverDelivery } from "../services/driver/delivery.server";
@@ -69,18 +70,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 }
 
-const button = {
-  background: "#2e2028",
-  color: "white",
-  border: "none",
-  borderRadius: 8,
-  padding: "13px 22px",
-  font: "inherit",
-  fontWeight: 600,
-  cursor: "pointer",
-  minHeight: 44,
-} as const;
-
 export default function DriverDeliveryDetail() {
   const { delivery, chatId, csrfToken } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>() as { ok: boolean; message?: string; delivery?: DriverDelivery } | undefined;
@@ -90,47 +79,63 @@ export default function DriverDeliveryDetail() {
   const address = [current.destinationAddress1, current.destinationAddress2].filter(Boolean).join(", ");
   const suburb = [current.destinationCity, current.destinationPostcode].filter(Boolean).join(" ");
   const items = lines(current.lineItems);
+  const canStart = current.status === "ASSIGNED" || current.status === "SCHEDULED";
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px" }}>
-      <p><Link to="/driver/upcoming">← Upcoming deliveries</Link></p>
-      <h1>{current.shopifyOrderNumber}</h1>
-      <p>{current.status}{current.scheduledFor ? ` · scheduled ${new Date(current.scheduledFor).toLocaleString("en-AU", { timeZone: "Australia/Perth" })}` : ""}</p>
+    <>
+      <PageHeader
+        back={{ to: "/driver/upcoming", label: "Upcoming" }}
+        title={current.shopifyOrderNumber}
+        subtitle={<StatusBadge status={current.status} />}
+      />
 
-      {result && !result.ok ? (
-        <p role="alert" style={{ background: "#fdeceb", color: "#8a1c13", borderRadius: 10, padding: "12px 14px" }}>{result.message}</p>
+      {result && !result.ok ? <Alert tone="error">{result.message}</Alert> : null}
+
+      {current.status === "DELIVERED" ? (
+        <Alert tone="success">
+          Delivered{current.deliveredAt ? ` at ${formatDateTime(current.deliveredAt)}` : ""}. This delivery and its chat are now closed.
+        </Alert>
       ) : null}
 
-      <section style={{ background: "white", borderRadius: 12, padding: 20, marginTop: 16 }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Deliver to</h2>
-        <p style={{ margin: "4px 0" }}>{current.customerFirstName ?? "Customer"}</p>
-        <p style={{ margin: "4px 0" }}>{address || "Address pending"}</p>
-        <p style={{ margin: "4px 0" }}>{suburb || ""}</p>
+      <Card>
+        <DetailGroup label="Schedule">
+          <p className="drv-detail__value">{current.scheduledFor ? formatDateTime(current.scheduledFor) : "Not scheduled"}</p>
+        </DetailGroup>
+        <DetailGroup label="Deliver to">
+          <p className="drv-detail__value">{current.customerFirstName ?? "Customer"}</p>
+          <p className="drv-detail__value">{address || "Address pending"}</p>
+          {suburb ? <p className="drv-detail__value">{suburb}</p> : null}
+        </DetailGroup>
         {current.deliveryNotes ? (
-          <>
-            <h3 style={{ fontSize: 15, marginBottom: 4 }}>Notes</h3>
-            <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{current.deliveryNotes}</p>
-          </>
+          <DetailGroup label="Drop notes">
+            <p className="drv-detail__notes drv-detail__value">{current.deliveryNotes}</p>
+          </DetailGroup>
         ) : null}
+      </Card>
+
+      <section className="drv-section">
+        <h2 className="drv-section__title">Items</h2>
+        <Card>
+          {items.length === 0 ? (
+            <p className="drv-card__meta">No items recorded.</p>
+          ) : (
+            <ul className="drv-items">
+              {items.map((item, index) => (
+                <li key={`${item.sku ?? item.title}-${index}`}>
+                  <span>{item.title}</span>
+                  <span>× {item.quantity}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </section>
 
-      <section style={{ background: "white", borderRadius: 12, padding: 20, marginTop: 16 }}>
-        <h2 style={{ fontSize: 18, marginTop: 0 }}>Items</h2>
-        {items.length === 0 ? <p>No items recorded.</p> : (
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {items.map((item, index) => (
-              <li key={`${item.sku ?? item.title}-${index}`}>{item.title} × {item.quantity}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 20 }}>
-        {chatId ? <Link to={`/driver/chat/${chatId}`} style={{ ...button, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open chat</Link> : null}
-        {current.status === "ASSIGNED" || current.status === "SCHEDULED" ? (
+      <div className="drv-actions">
+        {canStart ? (
           <Form method="post">
             <input type="hidden" name="csrfToken" value={csrfToken} />
-            <button type="submit" name="intent" value="start" disabled={busy} style={button}>
+            <button type="submit" name="intent" value="start" className="drv-btn drv-btn--primary drv-btn--block" disabled={busy}>
               {busy ? "Saving…" : "Mark out for delivery"}
             </button>
           </Form>
@@ -138,18 +143,13 @@ export default function DriverDeliveryDetail() {
         {current.status === "OUT_FOR_DELIVERY" ? (
           <Form method="post">
             <input type="hidden" name="csrfToken" value={csrfToken} />
-            <button type="submit" name="intent" value="complete" disabled={busy} style={button}>
+            <button type="submit" name="intent" value="complete" className="drv-btn drv-btn--primary drv-btn--block" disabled={busy}>
               {busy ? "Saving…" : "Mark delivered"}
             </button>
           </Form>
         ) : null}
+        {chatId ? <Link className="drv-btn drv-btn--secondary drv-btn--block" to={`/driver/chat/${chatId}`}>Open chat</Link> : null}
       </div>
-
-      {current.status === "DELIVERED" ? (
-        <p style={{ background: "#eaf7ee", color: "#1d6b34", borderRadius: 10, padding: "12px 14px", marginTop: 16 }}>
-          Delivered{current.deliveredAt ? ` at ${new Date(current.deliveredAt).toLocaleString("en-AU", { timeZone: "Australia/Perth" })}` : ""}. This delivery and its chat are now closed.
-        </p>
-      ) : null}
-    </main>
+    </>
   );
 }

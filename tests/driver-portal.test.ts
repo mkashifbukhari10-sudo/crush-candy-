@@ -57,9 +57,16 @@ describe("driver navigation is complete and current", () => {
     expect(home).not.toContain("listAssignmentsForDriver");
   });
 
-  it("gives notices and the chat thread a way back", () => {
-    expect(read("driver.notice.tsx")).toContain('to="/driver"');
-    expect(read("driver.chat.$id.tsx")).toContain('to="/driver/chat"');
+  it("reaches every destination from the shared shell navigation", () => {
+    const layout = read("driver.tsx");
+    for (const href of ["/driver", "/driver/upcoming", "/driver/scheduled", "/driver/chat", "/driver/notice", "/driver/account"]) {
+      expect(layout).toContain(`"${href}"`);
+    }
+  });
+
+  it("gives detail screens a contextual back link", () => {
+    expect(read("driver.chat.$id.tsx")).toContain('to: "/driver/chat"');
+    expect(read("driver.upcoming.$id.tsx")).toContain('to: "/driver/upcoming"');
   });
 
   it("leaves the logout route with no reachable component", () => {

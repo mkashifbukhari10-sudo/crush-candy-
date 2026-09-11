@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Form, Link, redirect, useFetcher, useLoaderData } from "react-router";
+import { Form, redirect, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { requireDriver } from "../auth/driver.server";
+import { Alert, PageHeader, formatDateTime } from "../components/driver/ui";
 import { createDriverCsrfToken } from "../lib/driver-security.server";
 import { requireDriverCsrf } from "../services/driver/auth.server";
 import { getDriverConversation, markConversationRead, sendMessage } from "../services/chat.server";
@@ -13,11 +14,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) { try { co
 
 export async function action({ request, params }: ActionFunctionArgs) { const auth = await requireDriver(request); const form = await request.formData(); requireDriverCsrf(request, auth, String(form.get("csrfToken") ?? "")); const conversation = await getDriverConversation(params.id ?? "", auth.context.driverId); if (!conversation) throw new Response("Not found", { status: 404 }); const intent = String(form.get("intent")); if (intent === "read") { await markConversationRead(conversation.id, "DRIVER", auth.context.driverId, String(form.get("messageId") || "")); return { ok: true }; } await sendMessage({ conversationId: conversation.id, senderType: "DRIVER", senderId: auth.context.driverId, senderLabel: auth.context.displayName, body: String(form.get("body") ?? "") }); return { ok: true }; }
 
-const timeLabel = (value: string | Date) => new Date(value).toLocaleString("en-AU", { timeZone: "Australia/Perth" });
-
 export default function DriverChat() {
   const { conversation, csrfToken } = useLoaderData<typeof loader>();
   const readFetcher = useFetcher();
+  const sending = useNavigation().state !== "idle";
 
   const initial = useMemo<StreamMessage[]>(
     () => conversation.messages.map((m) => ({ id: m.id, senderType: m.senderType, senderLabel: m.senderLabel, body: m.body, createdAt: String(m.createdAt) })),
@@ -78,28 +78,46 @@ export default function DriverChat() {
   }, [latest?.id, csrfToken]);
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px" }}>
-      <p><Link to="/driver/chat">← Delivery chats</Link></p>
-      <h1>Delivery chat · {conversation.assignment.shopifyOrderNumber}</h1>
-      <p>Use this chat for ETA, arrival, and drop-off communication. Keep contact details inside the platform.</p>
+    <>
+      <PageHeader
+        back={{ to: "/driver/chat", label: "Delivery chats" }}
+        title={conversation.assignment.shopifyOrderNumber}
+        subtitle="Arrival and drop-off only. Keep contact details inside the platform."
+      />
 
-      <div ref={listRef} onScroll={trackScroll} style={{ maxHeight: "55vh", overflowY: "auto", background: "white", borderRadius: 12, padding: 16 }}>
-        {messages.length === 0 ? <p>No messages yet.</p> : messages.map((m) => (
-          <p key={m.id}><strong>{m.senderLabel}</strong> · {timeLabel(m.createdAt)}<br />{m.body}</p>
-        ))}
+      <div className="drv-thread" ref={listRef} onScroll={trackScroll} role="log" aria-live="polite" aria-label="Delivery conversation">
+        {messages.length === 0 ? (
+          <p className="drv-card__meta">No messages yet. Send the first update.</p>
+        ) : (
+          messages.map((message) => {
+            const mine = message.senderType === "DRIVER";
+            return (
+              <div key={message.id} className={`drv-msg ${mine ? "drv-msg--me" : "drv-msg--them"}`}>
+                <span className="drv-msg__who">{mine ? "You" : message.senderLabel}</span>
+                <p className="drv-msg__body">{message.body}</p>
+                <time className="drv-msg__at" dateTime={message.createdAt}>{formatDateTime(message.createdAt)}</time>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {closed ? (
-        <p role="status" style={{ background: "#eef1f4", borderRadius: 10, padding: "12px 14px", marginTop: 16 }}>
-          This delivery is complete. The chat is closed and no longer receives messages.
-        </p>
+        <Alert tone="info">This delivery is complete. The chat is closed and no longer receives messages.</Alert>
       ) : (
-        <Form method="post" style={{ marginTop: 16 }}>
+        <Form method="post" className="drv-section">
           <input type="hidden" name="csrfToken" value={csrfToken} />
-          <textarea name="body" maxLength={2000} required rows={3} style={{ width: "100%", font: "inherit", padding: 10, borderRadius: 8, border: "1px solid #ddd3da" }} />
-          <button type="submit" style={{ minHeight: 44, padding: "12px 22px", borderRadius: 8, border: "none", background: "#2e2028", color: "white", font: "inherit", fontWeight: 600, cursor: "pointer" }}>Send</button>
+          <label className="drv-field">
+            <span className="drv-field__label">Message</span>
+            <textarea className="drv-textarea" name="body" maxLength={2000} required rows={3} placeholder="Share an ETA or arrival update…" />
+          </label>
+          <div className="drv-actions">
+            <button type="submit" className="drv-btn drv-btn--primary drv-btn--block" disabled={sending}>
+              {sending ? "Sending…" : "Send"}
+            </button>
+          </div>
         </Form>
       )}
-    </main>
+    </>
   );
 }
