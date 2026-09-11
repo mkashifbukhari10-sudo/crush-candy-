@@ -36,5 +36,44 @@ export async function sendMessage(input: { conversationId: string; senderType: "
   if (!c) throw new Response("Not found", { status: 404 });
   return db.message.create({ data: { conversationId: c.id, senderType: input.senderType, senderId: input.senderId, senderLabel: input.senderLabel.slice(0, 120), body } });
 }
-export async function markConversationRead(id: string, role: "CUSTOMER" | "DRIVER", subjectId: string, messageId?: string) { const c = role === "CUSTOMER" ? await getCustomerConversation(id, subjectId) : await getDriverConversation(id, subjectId); if (!c) throw new Response("Not found", { status: 404 }); return db.conversationParticipant.updateMany({ where: { conversationId: id, role, subjectId }, data: { lastReadAt: new Date(), lastReadMessageId: messageId ?? null } }); }
-export async function conversationEvents(id: string, after: Date, role: "CUSTOMER" | "DRIVER", subjectId: string) { const c = role === "CUSTOMER" ? await getCustomerConversation(id, subjectId) : await getDriverConversation(id, subjectId); if (!c) throw new Response("Not found", { status: 404 }); return db.message.findMany({ where: { conversationId: id, createdAt: { gt: after } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }); }
+export async function markConversationRead(id: string, role: "CUSTOMER" | "DRIVER", subjectId: string, messageId?: string) { const c = role === "CUSTOMER" ? await getCustomerConversation(id, subjectId) : await getDriverConversation(id, subjectId); if (!c) throw new Response("Not found", { status: 404 }); const readAt = new Date();
+  return db.conversationParticipant.updateMany({ where: { conversationId: id, role, subjectId, OR: [{ lastReadAt: null }, { lastReadAt: { lt: readAt } }] }, data: { lastReadAt: readAt, lastReadMessageId: messageId ?? null } }); }
+export async function conversationEvents(id: string, after: Date, role: "CUSTOMER" | "DRIVER", subjectId: string) { const c = role === "CUSTOMER" ? await getCustomerConversation(id, subjectId) : await getDriverConversation(id, subjectId); if (!c) throw new Response("Not found", { status: 404 }); return db.message.findMany({ where: { conversationId: id, createdAt: { gt: after } }, select: { id: true, senderType: true, senderLabel: true, body: true, createdAt: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }); }
+
+const UNREAD_MESSAGE_SCAN_LIMIT = 2000;
+
+/**
+ * Unread counts per accessible delivery conversation for one driver, derived from the existing
+ * ConversationParticipant markers — no new storage. Inaccessible threads (another driver's, a
+ * pickup order, a delivered or closed conversation) never enter the query, and the driver's own
+ * messages are never unread.
+ */
+export async function driverUnreadCounts(driverId: string): Promise<Record<string, number>> {
+  const conversations = await db.conversation.findMany({
+    where: { kind: "ORDER_DELIVERY", status: "OPEN", assignment: { driverId, fulfillmentMode: "DELIVERY", status: { in: [...OPEN_STATUSES] } } },
+    select: { id: true, participants: { where: { role: "DRIVER", subjectId: driverId }, select: { lastReadAt: true } } },
+    take: 200,
+  });
+  if (conversations.length === 0) return {};
+
+  const lastRead = new Map(conversations.map((c) => [c.id, c.participants[0]?.lastReadAt ?? null]));
+  const counts: Record<string, number> = Object.fromEntries(conversations.map((c) => [c.id, 0]));
+
+  const messages = await db.message.findMany({
+    where: { conversationId: { in: [...lastRead.keys()] }, senderId: { not: driverId } },
+    select: { conversationId: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+    take: UNREAD_MESSAGE_SCAN_LIMIT,
+  });
+
+  for (const message of messages) {
+    const readAt = lastRead.get(message.conversationId);
+    if (readAt === undefined) continue;
+    if (readAt === null || message.createdAt > readAt) counts[message.conversationId] += 1;
+  }
+  return counts;
+}
+
+export async function driverUnreadTotal(driverId: string): Promise<number> {
+  return Object.values(await driverUnreadCounts(driverId)).reduce((sum, count) => sum + count, 0);
+}

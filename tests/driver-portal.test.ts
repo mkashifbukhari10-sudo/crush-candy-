@@ -48,7 +48,7 @@ describe("driver navigation is complete and current", () => {
   });
 
   it("links home to upcoming, chat and notices", () => {
-    for (const href of ["/driver/upcoming", "/driver/chat", "/driver/notice"]) {
+    for (const href of ["/driver/upcoming", "/driver/scheduled", "/driver/chat", "/driver/notice"]) {
       expect(home).toContain(`"${href}"`);
     }
   });
@@ -87,7 +87,7 @@ describe("driver error handling stays inside the driver plane", () => {
 
 describe("security boundaries are untouched", () => {
   it("keeps requireDriver on every authenticated driver route", () => {
-    for (const file of ["driver._index.tsx", "driver.upcoming._index.tsx", "driver.upcoming.$id.tsx", "driver.chat.tsx", "driver.chat.$id.tsx", "driver.notice.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
+    for (const file of ["driver._index.tsx", "driver.upcoming._index.tsx", "driver.upcoming.$id.tsx", "driver.scheduled.tsx", "driver.chat.tsx", "driver.chat.$id.tsx", "driver.notice.tsx", "driver.logout.tsx", "driver.logout-all.tsx"]) {
       expect(read(file)).toContain("requireDriver");
     }
   });

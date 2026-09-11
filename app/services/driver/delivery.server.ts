@@ -143,3 +143,58 @@ export async function completeDelivery(assignmentId: string, driverId: string): 
     audit: "DELIVERY_COMPLETED",
   });
 }
+
+/** Perth calendar day key (YYYY-MM-DD) so grouping matches the driver's local date, not UTC. */
+export function perthDateKey(value: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
+}
+
+export type ScheduledDelivery = {
+  id: string;
+  shopifyOrderNumber: string;
+  scheduledFor: Date;
+  destinationCity: string | null;
+  destinationPostcode: string | null;
+  items: number;
+};
+
+function itemCount(lineItems: unknown): number {
+  return Array.isArray(lineItems)
+    ? lineItems.reduce((sum: number, raw) => sum + (Number((raw as { quantity?: unknown })?.quantity) || 0), 0)
+    : 0;
+}
+
+/**
+ * Future scheduled deliveries for this driver, grouped by Perth date. Scheduling itself stays
+ * admin-owned; this is read-only. An ASSIGNED order with no scheduledFor belongs in Upcoming and
+ * is excluded here by the status filter.
+ */
+export async function listScheduledForDriver(
+  driverId: string,
+  now = new Date(),
+): Promise<Array<{ date: string; deliveries: ScheduledDelivery[] }>> {
+  const rows = await db.assignment.findMany({
+    where: { driverId, fulfillmentMode: "DELIVERY", status: "SCHEDULED", scheduledFor: { gte: now } },
+    select: { id: true, shopifyOrderNumber: true, scheduledFor: true, destinationCity: true, destinationPostcode: true, lineItems: true },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
+    take: 200,
+  });
+
+  const groups = new Map<string, ScheduledDelivery[]>();
+  for (const row of rows) {
+    if (!row.scheduledFor) continue;
+    const key = perthDateKey(row.scheduledFor);
+    const entry: ScheduledDelivery = {
+      id: row.id,
+      shopifyOrderNumber: row.shopifyOrderNumber,
+      scheduledFor: row.scheduledFor,
+      destinationCity: row.destinationCity,
+      destinationPostcode: row.destinationPostcode,
+      items: itemCount(row.lineItems),
+    };
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(entry);
+    else groups.set(key, [entry]);
+  }
+  return [...groups.entries()].map(([date, deliveries]) => ({ date, deliveries }));
+}

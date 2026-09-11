@@ -3,11 +3,16 @@ import { Form, Link, redirect, useLoaderData } from "react-router";
 
 import { requireDriver } from "../auth/driver.server";
 import { createDriverCsrfToken } from "../lib/driver-security.server";
+import { driverUnreadTotal } from "../services/chat.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const auth = await requireDriver(request);
-    return { ...auth.context, csrfToken: createDriverCsrfToken(auth.context.sessionId) };
+    return {
+      ...auth.context,
+      csrfToken: createDriverCsrfToken(auth.context.sessionId),
+      unread: await driverUnreadTotal(auth.context.driverId),
+    };
   } catch {
     throw redirect("/driver/login");
   }
@@ -15,9 +20,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 const AREAS = [
   ["/driver/upcoming", "Upcoming deliveries", "Deliveries assigned to you."],
+  ["/driver/scheduled", "Scheduled deliveries", "Future deliveries grouped by date."],
   ["/driver/chat", "Delivery chats", "Arrival and drop-off messages."],
   ["/driver/notice", "Driver notices", "Announcements for drivers."],
 ] as const;
+
+const unreadBadge = {
+  background: "#a3346a",
+  color: "white",
+  borderRadius: 999,
+  padding: "1px 9px",
+  fontSize: 12,
+  fontWeight: 700,
+  marginLeft: 8,
+} as const;
 
 export default function DriverHome() {
   const driver = useLoaderData<typeof loader>();
@@ -34,6 +50,9 @@ export default function DriverHome() {
             {AREAS.map(([href, label, description]) => (
               <li key={href}>
                 <Link to={href}>{label}</Link>
+                {href === "/driver/chat" && driver.unread > 0 ? (
+                  <span style={unreadBadge} aria-label={`${driver.unread} unread messages`}>{driver.unread}</span>
+                ) : null}
                 <div style={{ fontSize: 13, color: "#6b5a64" }}>{description}</div>
               </li>
             ))}
