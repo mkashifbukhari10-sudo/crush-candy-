@@ -12,6 +12,5 @@ export async function action({ request }: ActionFunctionArgs) {
   throw redirect("/driver/login", { headers });
 }
 
+// GET is never a logout. It redirects to the portal, so this route renders nothing.
 export async function loader() { throw redirect("/driver"); }
-
-export default function Logout() { return null; }
