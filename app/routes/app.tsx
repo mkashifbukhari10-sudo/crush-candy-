@@ -31,6 +31,8 @@ export default function App() {
         <a href={href("/app/dispatch")}>Dispatch</a>
         <a href={href("/app/chat")}>Chat Oversight</a>
         <a href={href("/app/delivery-settings")}>Delivery Settings</a>
+        {/* TEMPORARY — delivery architecture proof of concept. Remove with app.delivery-poc.tsx. */}
+        <a href={href("/app/delivery-poc")}>Delivery POC</a>
         <a href={href("/app/announcements")}>Announcements</a>
         <a href={href("/app/support")}>Support Inbox</a>
       </NavMenu>
