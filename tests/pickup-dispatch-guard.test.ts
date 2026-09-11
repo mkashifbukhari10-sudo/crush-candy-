@@ -34,7 +34,7 @@ const client = vi.hoisted(() => ({
 
 vi.mock("../app/db.server", () => ({ default: client }));
 
-const { assignOrder, getAssignmentForDriver, listAssignmentsForDriver, scheduleOrder } = await import(
+const { assignOrder, deliverySlaScope, getAssignmentForDriver, listAssignmentsForDriver, listOverdueDeliveries, scheduleOrder } = await import(
   "../app/services/dispatch.server"
 );
 
@@ -84,5 +84,32 @@ describe("driver queues exclude pickup orders", () => {
     seed("PICKUP", { driverId: "driver-1" });
     await getAssignmentForDriver("a1", "driver-1");
     expect((calls.at(-1)?.where as Row).fulfillmentMode).toBe("DELIVERY");
+  });
+});
+
+describe("delivery SLA reporting excludes pickup", () => {
+  const now = new Date("2026-09-11T12:00:00.000Z");
+
+  it("scopes overdue work to delivery orders with a live SLA", () => {
+    const scope = deliverySlaScope(now);
+    expect(scope.fulfillmentMode).toBe("DELIVERY");
+    expect(scope.slaDueAt).toEqual({ not: null, lt: now });
+    expect(scope.status.in).toEqual(["PENDING", "ASSIGNED", "SCHEDULED", "OUT_FOR_DELIVERY"]);
+  });
+
+  it("queries only delivery orders when listing overdue work", async () => {
+    seed("PICKUP", { slaDueAt: null });
+    await listOverdueDeliveries(now);
+    const where = calls.at(-1)?.where as Row;
+    expect(where.fulfillmentMode).toBe("DELIVERY");
+    expect(where.slaDueAt).toEqual({ not: null, lt: now });
+  });
+
+  it("leaves the delivery SLA scope unchanged for delivery orders", () => {
+    expect(deliverySlaScope(now)).toEqual({
+      fulfillmentMode: "DELIVERY",
+      slaDueAt: { not: null, lt: now },
+      status: { in: ["PENDING", "ASSIGNED", "SCHEDULED", "OUT_FOR_DELIVERY"] },
+    });
   });
 });

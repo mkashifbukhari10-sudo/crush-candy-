@@ -17,8 +17,10 @@ vi.mock("../app/config/env.server", () => ({
 
 function matches(row: Row, where: Row): boolean {
   return Object.entries(where).every(([key, value]) => {
-    if (value && typeof value === "object" && "notIn" in (value as Row)) {
-      return !((value as { notIn: unknown[] }).notIn as unknown[]).includes(row[key]);
+    if (value && typeof value === "object") {
+      const filter = value as Row;
+      if ("notIn" in filter) return !(filter.notIn as unknown[]).includes(row[key]);
+      if ("in" in filter) return (filter.in as unknown[]).includes(row[key]);
     }
     return row[key] === value;
   });
@@ -79,6 +81,7 @@ function seed(overrides: Row = {}) {
     assignedAt: null,
     assignedBy: null,
     scheduledFor: null,
+    slaDueAt: new Date('2026-09-12T00:00:00.000Z'),
     ...overrides,
   };
   assignments.set(String(row.id), row);
@@ -197,10 +200,38 @@ describe("election transitions the order", () => {
     expect(stored().fulfillmentMode).toBe("PICKUP");
   });
 
+  it.each(["PENDING", "ASSIGNED", "SCHEDULED"])("allows election from %s", async (status) => {
+    seed({ status, driverId: status === "PENDING" ? null : "driver-1" });
+    const view = await electPickup("assignment-1", OWNER);
+    expect(view.elected).toBe(true);
+    expect(stored().fulfillmentMode).toBe("PICKUP");
+    expect(stored().driverId).toBeNull();
+  });
+
+  it("refuses an order already OUT_FOR_DELIVERY and changes nothing", async () => {
+    seed({ status: "OUT_FOR_DELIVERY", driverId: "driver-1", slaDueAt: new Date("2026-09-12T00:00:00.000Z") });
+    await expect(electPickup("assignment-1", OWNER)).rejects.toMatchObject({ reason: "ALREADY_DISPATCHED" });
+    const row = stored();
+    expect(row.fulfillmentMode).toBe("DELIVERY");
+    expect(row.pickupElectedAt).toBeNull();
+    expect(row.driverId).toBe("driver-1");
+    expect(row.slaDueAt).toBeInstanceOf(Date);
+    expect(events).toHaveLength(0);
+    expect(conversations).toHaveLength(0);
+  });
+
   it.each(["DELIVERED", "FAILED", "CANCELLED"])("refuses a %s order", async (status) => {
     seed({ status });
     await expect(electPickup("assignment-1", OWNER)).rejects.toMatchObject({ reason: "TERMINAL_STATE" });
     expect(stored().fulfillmentMode).toBe("DELIVERY");
+    expect(stored().slaDueAt).toBeInstanceOf(Date);
+  });
+
+  it("clears the delivery SLA on successful election", async () => {
+    seed({ status: "ASSIGNED", driverId: "driver-1" });
+    expect(stored().slaDueAt).toBeInstanceOf(Date);
+    await electPickup("assignment-1", OWNER);
+    expect(stored().slaDueAt).toBeNull();
   });
 });
 

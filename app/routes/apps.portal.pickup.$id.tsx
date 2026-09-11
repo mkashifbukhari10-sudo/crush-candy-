@@ -10,6 +10,7 @@ import { PickupError, electPickup, getPickupForCustomer } from "../services/pick
 const MESSAGE: Record<PickupError["reason"], string> = {
   NOT_FOUND: "That order is not available.",
   NOT_ELIGIBLE: "This order does not qualify for pickup.",
+  ALREADY_DISPATCHED: "This order is already out for delivery, so it can no longer be changed to pickup. Message us here and we will help.",
   TERMINAL_STATE: "This order can no longer be changed to pickup.",
   NOT_PICKUP: "This order is not set to pickup.",
   ADDRESS_UNCONFIGURED: "Pickup is temporarily unavailable. Please contact us and we will arrange collection.",

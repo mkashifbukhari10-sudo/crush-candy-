@@ -79,6 +79,14 @@ export async function scheduleOrder(input: { assignmentId: string; scheduledFor:
     return updated;
   });
 }
+/**
+ * The delivery SLA population. Pickup orders are excluded by definition: electing pickup clears
+ * slaDueAt, so there is no delivery SLA to be overdue against.
+ */
+export function deliverySlaScope(now = new Date()) {
+  return { fulfillmentMode: "DELIVERY" as const, slaDueAt: { not: null, lt: now }, status: { in: [...ACTIVE_STATUSES] } };
+}
+export async function listOverdueDeliveries(now = new Date()) { return db.assignment.findMany({ where: deliverySlaScope(now), orderBy: { slaDueAt: "asc" }, take: 200 }); }
 export async function listActiveDrivers() { return db.driver.findMany({ where: { account: { status: "ACTIVE" } }, select: { id: true, displayName: true } }); }
 export async function getDispatchSettings() { return db.appSettings.findUnique({ where: { id: "singleton" } }); }
 export async function setDefaultDriver(driverId: string | null, enabled: boolean) {

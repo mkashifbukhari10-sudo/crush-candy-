@@ -184,7 +184,7 @@ model Assignment {
   status             AssignmentStatus @default(PENDING)
   fulfillmentMode    FulfillmentMode  @default(DELIVERY)
   pickupElectedAt    DateTime?
-  slaDueAt           DateTime
+  slaDueAt           DateTime?
   scheduledFor       DateTime?
   assignedAt         DateTime?
   assignedBy         String?

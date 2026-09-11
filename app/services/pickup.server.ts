@@ -4,8 +4,10 @@ import { appendAuditLog } from "./audit/audit.server";
 
 export const PICKUP_THRESHOLD_GRAMS = 5000;
 
-/** Statuses past which fulfilment can no longer change. */
-const TERMINAL_STATUSES = ["DELIVERED", "FAILED", "CANCELLED"] as const;
+/** The only statuses from which a customer may still switch an order to pickup. */
+const ELECTABLE_STATUSES = ["PENDING", "ASSIGNED", "SCHEDULED"] as const;
+/** Once a driver is on the road the order is no longer the customer's to redirect. */
+const DISPATCHED_STATUS = "OUT_FOR_DELIVERY";
 
 export function normalizeWeightToGrams(value: number, unit: string | null | undefined): number {
   if (!Number.isFinite(value) || value < 0) return 0;
@@ -26,7 +28,7 @@ export function orderWeightGrams(lineItems: unknown): number {
 }
 export function isPickupEligible(lineItems: unknown, thresholdGrams = PICKUP_THRESHOLD_GRAMS) { return orderWeightGrams(lineItems) >= thresholdGrams; }
 
-export type PickupFailure = "NOT_FOUND" | "NOT_ELIGIBLE" | "TERMINAL_STATE" | "NOT_PICKUP" | "ADDRESS_UNCONFIGURED";
+export type PickupFailure = "NOT_FOUND" | "NOT_ELIGIBLE" | "ALREADY_DISPATCHED" | "TERMINAL_STATE" | "NOT_PICKUP" | "ADDRESS_UNCONFIGURED";
 
 export class PickupError extends Error {
   readonly reason: PickupFailure;
@@ -104,14 +106,16 @@ export async function electPickup(assignmentId: string, customerId: string): Pro
   const address = pickupAddress();
 
   if (assignment.fulfillmentMode === "PICKUP") return getPickupForCustomer(assignmentId, customerId);
-  if (TERMINAL_STATUSES.includes(assignment.status as (typeof TERMINAL_STATUSES)[number])) {
+  // Checked before the generic block so an in-transit order gets its own clear message.
+  if (assignment.status === DISPATCHED_STATUS) throw new PickupError("ALREADY_DISPATCHED");
+  if (!ELECTABLE_STATUSES.includes(assignment.status as (typeof ELECTABLE_STATUSES)[number])) {
     throw new PickupError("TERMINAL_STATE");
   }
 
   const conversationId = await db.$transaction(async (tx) => {
     // Conditional update: a concurrent election updates zero rows and this one becomes the no-op.
     const claim = await tx.assignment.updateMany({
-      where: { id: assignment.id, fulfillmentMode: "DELIVERY", status: { notIn: [...TERMINAL_STATUSES] } },
+      where: { id: assignment.id, fulfillmentMode: "DELIVERY", status: { in: [...ELECTABLE_STATUSES] } },
       data: {
         fulfillmentMode: "PICKUP",
         pickupElectedAt: new Date(),
@@ -120,6 +124,8 @@ export async function electPickup(assignmentId: string, customerId: string): Pro
         assignedAt: null,
         assignedBy: null,
         scheduledFor: null,
+        // A pickup order has no delivery SLA at all; it is cleared, not redefined.
+        slaDueAt: null,
         status: "PENDING",
       },
     });
