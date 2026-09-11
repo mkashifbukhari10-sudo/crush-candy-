@@ -435,3 +435,35 @@ model DeliveryDistanceCache {
 
   @@index([expiresAt])
 }
+
+enum DeliveryQuoteStatus {
+  ACTIVE
+  CONSUMED
+  EXPIRED
+}
+
+/// Short-lived server-side delivery quote. Holds the delivery address only for the life of the
+/// quote so the draft order can be created from server-held state rather than client-posted data.
+model DeliveryQuote {
+  id                 String              @id @default(cuid())
+  shop               String
+  shopifyCustomerId  String
+  cartFingerprint    String
+  addressFingerprint String
+  lines              Json
+  shippingAddress    Json
+  subtotalCents      Int
+  distanceKm         Decimal             @db.Decimal(10, 3)
+  feeCents           Int
+  currency           String              @default("AUD")
+  status             DeliveryQuoteStatus @default(ACTIVE)
+  draftOrderId       String?
+  consumedAt         DateTime?
+  expiresAt          DateTime
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([shopifyCustomerId, status])
+  @@index([expiresAt])
+  @@index([cartFingerprint])
+}
