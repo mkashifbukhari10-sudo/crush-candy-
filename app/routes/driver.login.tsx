@@ -2,6 +2,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, redirect, useActionData, useLoaderData, useSearchParams } from "react-router";
 import { z } from "zod";
 
+import { Alert, AuthCard, Field } from "../components/driver/ui";
 import { createDriverCsrfToken, verifyDriverCsrfToken } from "../lib/driver-security.server";
 import { DriverAuthenticationError, DriverRateLimitError } from "../lib/errors.server";
 import { loginDriver } from "../services/driver/auth.server";
@@ -36,5 +37,23 @@ export default function DriverLogin() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const returnTo = params.get("returnTo") ?? "/driver";
-  return <main style={{ maxWidth: 460, margin: "0 auto", padding: "72px 20px" }}><section style={{ background: "white", padding: 28, borderRadius: 12 }}><p style={{ textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12 }}>Crush Candy Supplies</p><h1>Driver sign in</h1>{actionData?.message ? <p role="alert">{actionData.message}</p> : null}<Form method="post"><input type="hidden" name="csrfToken" value={loaderData.csrfToken} /><input type="hidden" name="returnTo" value={returnTo} /><label>Email<input name="email" type="email" autoComplete="username" required /></label><label>Password<input name="password" type="password" autoComplete="current-password" required /></label><button type="submit">Sign in</button></Form><p><a href="/driver/forgot-password">Forgot password?</a></p></section></main>;
+  return (
+    <AuthCard title="Sign in">
+      {actionData?.message ? <Alert tone="error">{actionData.message}</Alert> : null}
+      <Form method="post" className="drv-auth__form">
+        <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+        <input type="hidden" name="returnTo" value={returnTo} />
+        <Field label="Email">
+          <input className="drv-input" name="email" type="email" autoComplete="username" inputMode="email" spellCheck={false} required />
+        </Field>
+        <Field label="Password">
+          <input className="drv-input" name="password" type="password" autoComplete="current-password" required />
+        </Field>
+        <div className="drv-actions">
+          <button type="submit" className="drv-btn drv-btn--primary drv-btn--block">Sign in</button>
+        </div>
+      </Form>
+      <p className="drv-auth__links"><a className="drv-link" href="/driver/forgot-password">Forgot password?</a></p>
+    </AuthCard>
+  );
 }

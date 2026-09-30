@@ -35,7 +35,7 @@ export function UnreadCount({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <span className="drv-count" aria-label={`${count} unread ${count === 1 ? "message" : "messages"}`}>
-      {count}
+      {count > 99 ? "99+" : count}
     </span>
   );
 }
@@ -102,6 +102,24 @@ export function DetailGroup({ label, children }: { label: string; children: Reac
     <div className="drv-detail__group">
       <p className="drv-detail__label">{label}</p>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Signed-out screens (sign in, activate, forgot, reset). One h1 per page; the footnote says who the
+ * portal is for without revealing anything about accounts.
+ */
+export function AuthCard({ title, lead, children }: { title: string; lead?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="drv-auth">
+      <section className="drv-auth__card" aria-labelledby="drv-auth-title">
+        <p className="drv-auth__eyebrow">Driver portal</p>
+        <h1 className="drv-auth__title" id="drv-auth-title">{title}</h1>
+        {lead ? <p className="drv-auth__lead">{lead}</p> : null}
+        {children}
+      </section>
+      <p className="drv-auth__foot">For Crush Candy drivers only. Accounts are created by our team.</p>
     </div>
   );
 }

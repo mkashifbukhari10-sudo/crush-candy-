@@ -144,6 +144,18 @@ export async function completeDelivery(assignmentId: string, driverId: string): 
   });
 }
 
+/**
+ * Counts for the driver home tiles. Read-only and scoped exactly like the lists they summarise:
+ * Upcoming mirrors `listAssignmentsForDriver`, Scheduled mirrors `listScheduledForDriver`.
+ */
+export async function countDriverWork(driverId: string, now = new Date()): Promise<{ upcoming: number; scheduled: number }> {
+  const [upcoming, scheduled] = await Promise.all([
+    db.assignment.count({ where: { driverId, fulfillmentMode: "DELIVERY", status: { in: ["PENDING", ...ACTIVE_STATUSES] } } }),
+    db.assignment.count({ where: { driverId, fulfillmentMode: "DELIVERY", status: "SCHEDULED", scheduledFor: { gte: now } } }),
+  ]);
+  return { upcoming, scheduled };
+}
+
 /** Perth calendar day key (YYYY-MM-DD) so grouping matches the driver's local date, not UTC. */
 export function perthDateKey(value: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
