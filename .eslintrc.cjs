@@ -77,6 +77,8 @@ module.exports = {
             ignore: [
               "^@shopify/shopify-app-react-router/(adapters/node|react|server)$",
               "^@react-router/dev/vite$",
+              // Vite query suffixes (e.g. "?raw" inlines a stylesheet as a string).
+              "\\?raw$",
             ],
           },
         ],

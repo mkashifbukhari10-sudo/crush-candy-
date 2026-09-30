@@ -158,7 +158,7 @@ export default function PortalDelivery() {
   return (
     <>
       <h1 style={{ margin: "8px 0 4px" }}>Delivery details</h1>
-      <p style={{ color: "#6c5763", marginTop: 0 }}>
+      <p style={{ color: "var(--ccs-muted)", marginTop: 0 }}>
         We price delivery on the actual driving distance from our Perth base. Delivery orders start at {money(minimumOrderCents)}.
       </p>
 
@@ -228,7 +228,7 @@ if(document.readyState!=='loading'){load()}else{document.addEventListener('DOMCo
             <div style={row}><span>Delivery ({quoted.quote.distanceKm.toFixed(1)} km by road)</span><span>{money(quoted.quote.feeCents)}</span></div>
             <div style={{ ...row, fontWeight: 700, borderBottom: "none" }}><span>Estimated total</span><span>{money(quoted.quote.totalCents)}</span></div>
           </div>
-          <p style={{ color: "#6c5763", fontSize: 13 }}>
+          <p style={{ color: "var(--ccs-muted)", fontSize: 13 }}>
             Delivering to {address?.address1}, {address?.city} {address?.provinceCode} {address?.zip}. Taxes are calculated at checkout. This quote holds
             until {new Date(quoted.quote.expiresAt).toLocaleTimeString()}.
           </p>
@@ -248,7 +248,7 @@ if(document.readyState!=='loading'){load()}else{document.addEventListener('DOMCo
         </section>
       ) : null}
 
-      <p style={{ marginTop: 24 }}><a href="/cart" style={{ color: "#8a4568" }}>Back to cart</a></p>
+      <p style={{ marginTop: 24 }}><a href="/cart" style={{ color: "var(--ccs-accent)" }}>Back to cart</a></p>
     </>
   );
 }
@@ -263,7 +263,7 @@ const banner = (background: string, color: string) => ({
   fontSize: 14,
 });
 const row = { display: "flex", justifyContent: "space-between", gap: 16, padding: "8px 0", borderBottom: "1px solid #f2e7ee" } as const;
-const fieldLabel = { display: "grid", gap: 4, fontSize: 13, color: "#6c5763" } as const;
+const fieldLabel = { display: "grid", gap: 4, fontSize: 13, color: "var(--ccs-muted)" } as const;
 const fieldInput = { padding: "10px 12px", border: "1px solid #e0cfda", borderRadius: 8, font: "inherit", color: "#30212a" } as const;
 const cta = {
   display: "inline-block",

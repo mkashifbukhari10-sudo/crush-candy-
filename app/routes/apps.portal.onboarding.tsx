@@ -124,11 +124,14 @@ export default function CustomerOnboarding() {
   if (!state.authenticated) {
     return (
       <>
-        <h1>Log in first</h1>
-        <p>An access code can only approve a signed-in Shopify customer.</p>
-        <a href={`https://${state.shop}/account/login?return_url=${returnTo}`}>
-          Log in to your customer account
-        </a>
+        <p className="ccs-eyebrow">Private store access</p>
+        <h1 className="ccs-title">Log in first</h1>
+        <p className="ccs-lead">An access code can only approve a signed-in Shopify customer.</p>
+        <div className="ccs-actions">
+          <a className="ccs-btn ccs-btn--primary" href={`https://${state.shop}/account/login?return_url=${returnTo}`}>
+            Log in to your customer account
+          </a>
+        </div>
       </>
     );
   }
@@ -136,35 +139,47 @@ export default function CustomerOnboarding() {
   if (state.approved || actionData?.ok) {
     return (
       <>
-        <h1>Access approved</h1>
-        <p>{actionData?.message ?? "Your customer account is already approved."}</p>
-        <a href={`https://${state.shop}`}>Continue to the store</a>
+        <p className="ccs-eyebrow">Private store access</p>
+        <h1 className="ccs-title">Access approved</h1>
+        <p className="ccs-alert ccs-alert--success" role="status">{actionData?.message ?? "Your customer account is already approved."}</p>
+        <div className="ccs-actions">
+          <a className="ccs-btn ccs-btn--primary" href={`https://${state.shop}`}>Continue to the store</a>
+        </div>
       </>
     );
   }
 
   return (
     <>
-      <h1>Enter your access code</h1>
-      <p>Codes are single-use and expire 24 hours after they are issued.</p>
-      {actionData?.message ? <p role="alert">{actionData.message}</p> : null}
-      <Form method="post">
-        <input type="hidden" name="csrfToken" value={state.csrfToken ?? ""} />
-        <label htmlFor="accessCode">Access code</label>
-        <input
-          id="accessCode"
-          name="accessCode"
-          type="text"
-          autoComplete="one-time-code"
-          required
-          minLength={8}
-          maxLength={64}
-          style={{ display: "block", width: "100%", padding: 12, margin: "8px 0 16px" }}
-        />
-        <button type="submit" style={{ padding: "12px 20px", cursor: "pointer" }}>
-          Approve my account
-        </button>
-      </Form>
+      <p className="ccs-eyebrow">Private store access</p>
+      <h1 className="ccs-title">Enter your access code</h1>
+      <p className="ccs-lead">Each code works once and expires 24 hours after it is issued.</p>
+      <section className="ccs-card" aria-label="Access code">
+        {actionData?.message ? <p className="ccs-alert ccs-alert--error" role="alert" id="accessCode-error">{actionData.message}</p> : null}
+        <Form method="post">
+          <input type="hidden" name="csrfToken" value={state.csrfToken ?? ""} />
+          <div className="ccs-field">
+            <label className="ccs-field__label" htmlFor="accessCode">Access code</label>
+            <input
+              id="accessCode"
+              className="ccs-input ccs-input--code"
+              name="accessCode"
+              type="text"
+              autoComplete="one-time-code"
+              autoCapitalize="characters"
+              spellCheck={false}
+              required
+              minLength={8}
+              maxLength={64}
+              aria-describedby={actionData?.message ? "accessCode-hint accessCode-error" : "accessCode-hint"}
+            />
+            <span className="ccs-field__hint" id="accessCode-hint">Codes look like CCS-XXXX-XXXX-XXXX-XXXX-XXXX.</span>
+          </div>
+          <div className="ccs-actions">
+            <button type="submit" className="ccs-btn ccs-btn--primary">Approve my account</button>
+          </div>
+        </Form>
+      </section>
     </>
   );
 }

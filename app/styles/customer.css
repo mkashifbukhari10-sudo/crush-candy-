@@ -1,0 +1,147 @@
+/*
+ * Customer portal (App Proxy) styles. Embedded into the page by apps.portal.tsx as a <style>
+ * element, because proxied pages are served from the storefront domain and may not be able to load
+ * the app's /assets files. Every rule is scoped under .ccs so nothing reaches the Dawn theme.
+ * Colours come from the shared brand tokens.
+ */
+
+.ccs {
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--ccs-bg);
+  color: var(--ccs-text);
+  font-family: var(--ccs-font);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+.ccs *, .ccs *::before, .ccs *::after { box-sizing: border-box; }
+.ccs :focus-visible { outline: 3px solid var(--ccs-accent); outline-offset: 2px; border-radius: 6px; }
+.ccs main { overflow-wrap: anywhere; }
+/* Pages not yet redesigned still use plain links; keep them on-brand and readable. */
+.ccs a:not([class]) { color: var(--ccs-accent); text-underline-offset: 3px; }
+
+/* ---------- shell ---------- */
+
+.ccs-header { background: var(--ccs-surface); border-bottom: 1px solid var(--ccs-divider); }
+.ccs-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.ccs-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ccs-tap);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ccs-accent);
+  text-decoration: none;
+}
+.ccs-header__link { display: inline-flex; align-items: center; min-height: var(--ccs-tap); color: var(--ccs-muted); font-size: 14px; text-decoration: none; }
+.ccs-header__link:hover { color: var(--ccs-text); }
+
+.ccs-nav { max-width: 720px; margin: 0 auto; padding: 0 8px; display: flex; gap: 4px; overflow-x: auto; }
+.ccs-nav__item {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ccs-tap);
+  padding: 0 12px;
+  color: var(--ccs-muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.ccs-nav__item:hover { color: var(--ccs-text); }
+.ccs-nav__item[aria-current="page"] { color: var(--ccs-accent); border-bottom-color: var(--ccs-accent); }
+
+.ccs-main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+
+/* ---------- page ---------- */
+
+.ccs-eyebrow { margin: 0; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ccs-muted); }
+.ccs-title { margin: 4px 0 0; font-size: 28px; line-height: 1.2; font-weight: 700; }
+.ccs-lead { margin: 8px 0 0; color: var(--ccs-muted); font-size: 16px; }
+
+.ccs-card {
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--ccs-surface);
+  border: 1px solid var(--ccs-divider);
+  border-radius: var(--ccs-radius);
+}
+@media (min-width: 480px) { .ccs-card { padding: 24px; } }
+
+.ccs-links { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: var(--ccs-gap); }
+.ccs-link-card {
+  display: block;
+  min-height: 64px;
+  padding: 16px 18px;
+  background: var(--ccs-surface);
+  border: 1px solid var(--ccs-divider);
+  border-radius: var(--ccs-radius);
+  color: inherit;
+  text-decoration: none;
+}
+.ccs-link-card:hover { border-color: var(--ccs-accent); }
+.ccs-link-card__title { display: flex; justify-content: space-between; gap: 12px; font-size: 17px; font-weight: 700; }
+.ccs-link-card__title::after { content: "›"; color: var(--ccs-muted); }
+.ccs-link-card__meta { display: block; margin-top: 4px; font-size: 14px; color: var(--ccs-muted); }
+
+/* ---------- forms and actions ---------- */
+
+.ccs-field { display: grid; gap: 6px; margin-top: 16px; }
+.ccs-field__label { font-size: 14px; font-weight: 600; color: var(--ccs-muted); }
+.ccs-field__hint { font-size: 13px; color: var(--ccs-muted); }
+.ccs-input {
+  width: 100%;
+  min-height: var(--ccs-tap);
+  padding: 12px 14px;
+  border: 1px solid var(--ccs-border-input);
+  border-radius: var(--ccs-radius-control);
+  background: var(--ccs-surface-2);
+  color: var(--ccs-text);
+  font: inherit;
+  font-size: 16px;
+}
+.ccs-input:focus { border-color: var(--ccs-accent); }
+.ccs-input--code { font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+.ccs-actions { display: grid; gap: 10px; margin-top: 20px; }
+.ccs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ccs-tap-primary);
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--ccs-radius-control);
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ccs-btn--primary { background: var(--ccs-button); color: var(--ccs-on-button); }
+.ccs-btn--primary:hover { background: var(--ccs-button-hover); }
+.ccs-btn--secondary { background: var(--ccs-surface-2); color: var(--ccs-text); border-color: var(--ccs-divider); }
+.ccs-btn--secondary:hover { border-color: var(--ccs-accent); }
+
+.ccs-alert { margin: 16px 0 0; padding: 13px 15px; border: 1px solid transparent; border-radius: 12px; font-size: 15px; }
+.ccs-alert--success { background: rgba(74, 222, 128, 0.1); color: var(--ccs-success); border-color: rgba(74, 222, 128, 0.35); }
+.ccs-alert--error { background: rgba(248, 113, 113, 0.1); color: var(--ccs-danger); border-color: rgba(248, 113, 113, 0.35); }
+.ccs-alert--info { background: var(--ccs-surface-2); color: var(--ccs-muted); border-color: var(--ccs-divider); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ccs *, .ccs *::before, .ccs *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
