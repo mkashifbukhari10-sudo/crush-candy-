@@ -61,3 +61,58 @@ s-page[heading="Delivery settings"] s-section > form > div:first-child { margin-
   s-page[heading="Chat oversight"] s-section > form > label,
   s-page[heading="Chat oversight"] s-section > form > a { grid-column: 1; }
 }
+
+/* ---------- admin dashboard (class-based, prefixed adm-) ---------- */
+
+.adm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.adm-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 96px;
+  padding: 16px;
+  border: 1px solid #e1e3e5;
+  border-radius: 10px;
+  background: #fff;
+  color: #303030;
+  text-decoration: none;
+}
+.adm-stat--link:hover { border-color: #8a8a8a; }
+.adm-stat--link:focus-visible { outline: 3px solid rgba(0, 91, 211, 0.5); outline-offset: 2px; }
+.adm-stat__label { font-size: 13px; font-weight: 550; color: #616161; }
+.adm-stat__value { font-size: 28px; font-weight: 650; line-height: 1.1; }
+
+.adm-attention { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.adm-attention a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #f1c21b;
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: #fff8e1;
+  color: #303030;
+  text-decoration: none;
+  font-weight: 550;
+}
+.adm-attention a:hover { background: #fff1c2; }
+.adm-attention__go { color: #005bd3; white-space: nowrap; }
+
+.adm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  background: #fff;
+  color: #303030;
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+}
+.adm-actions a:hover { border-color: #8a8a8a; }
+
+.adm-system { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

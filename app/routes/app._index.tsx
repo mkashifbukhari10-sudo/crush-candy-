@@ -2,7 +2,8 @@ import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
-import { APP_NAME, APP_PHASE } from "../config/constants";
+import { StatCard } from "../components/admin/StatCard";
+import { APP_NAME } from "../config/constants";
 import { getFoundationStatus } from "../services/admin/foundation.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -19,49 +20,79 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { ...status, adminContext: context.toString() };
 };
 
+const QUICK_ACTIONS = [
+  ["Generate access code", "/app/access-codes"],
+  ["Invite a driver", "/app/drivers"],
+  ["Assign & schedule orders", "/app/dispatch"],
+  ["Chat oversight", "/app/chat"],
+  ["Support inbox", "/app/support"],
+  ["Announcements", "/app/announcements"],
+  ["Delivery settings", "/app/delivery-settings"],
+] as const;
+
 export default function Index() {
   const status = useLoaderData<typeof loader>();
-  const withContext = (path: string) =>
-    status.adminContext ? `${path}?${status.adminContext}` : path;
-  const metrics = status.metrics;
-  const actions = [
-    ["Access Codes", "Create and revoke private-store codes", "/app/access-codes"],
-    ["Drivers", "Manage driver accounts and sessions", "/app/drivers"],
-    ["Dispatch", "Assign and schedule operational orders", "/app/dispatch"],
-    ["Chat Oversight", "Review customer-driver conversations", "/app/chat"],
-    ["Delivery Settings", "Manage delivery rules and pricing", "/app/delivery-settings"],
-    ["Announcements", "Publish customer and driver notices", "/app/announcements"],
-    ["Support Inbox", "Respond to customer support requests", "/app/support"],
-  ] as const;
+  const withContext = (path: string) => (status.adminContext ? `${path}?${status.adminContext}` : path);
+  // Counts are only meaningful when the database answered; otherwise show "—", never a fake 0.
+  const value = (n: number) => (status.databaseConnected ? n : null);
+  const m = status.metrics;
+
+  // Derived only from counts the loader already returns — nothing new is queried.
+  const attention = status.databaseConnected
+    ? ([
+        [m.pendingOrders, m.pendingOrders === 1 ? "order waiting for assignment or scheduling" : "orders waiting for assignment or scheduling", "Open dispatch", "/app/dispatch"],
+        [m.openTickets, m.openTickets === 1 ? "open support request" : "open support requests", "Open support inbox", "/app/support"],
+      ] as const).filter(([count]) => count > 0)
+    : [];
 
   return (
     <s-page heading={APP_NAME} inlineSize="large">
       <s-stack direction="block" gap="base">
-        <s-section heading={APP_PHASE}>
-          <s-stack direction="block" gap="base">
-            <s-text>{status.milestone}</s-text>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-              <s-badge tone={status.appConnected ? "success" : "critical"}>App · {status.appConnected ? "Connected" : "Unavailable"}</s-badge>
-              <s-badge tone={status.databaseConnected ? "success" : "critical"}>Database · {status.databaseConnected ? "Connected" : "Unavailable"}</s-badge>
-              <s-badge tone="info">Environment · {status.environment}</s-badge>
-            </div>
-          </s-stack>
+        {!status.databaseConnected ? (
+          <s-banner tone="critical">The database is not reachable, so operational counts are unavailable. Try again shortly.</s-banner>
+        ) : null}
+
+        <s-section heading="Needs attention">
+          {attention.length === 0 ? (
+            <s-text>{status.databaseConnected ? "Nothing needs attention right now." : "Unavailable while the database is unreachable."}</s-text>
+          ) : (
+            <ul className="adm-attention">
+              {attention.map(([count, text, cta, path]) => (
+                <li key={path}>
+                  <Link to={withContext(path)}>
+                    <span>{count} {text}</span>
+                    <span className="adm-attention__go">{cta} →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </s-section>
-        <s-section heading="Operational overview">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-            {[
-              ["Active drivers", metrics.activeDrivers],
-              ["Pending orders", metrics.pendingOrders],
-              ["Scheduled deliveries", metrics.scheduledDeliveries],
-              ["Open support", metrics.openTickets],
-              ["Active chats", metrics.activeConversations],
-              ["Active access codes", metrics.activeAccessCodes],
-            ].map(([label, value]) => <div key={label} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 16, background: "#fff" }}><s-text>{label}</s-text><div style={{ fontSize: 28, fontWeight: 650, marginTop: 8 }}>{value}</div></div>)}
+
+        <s-section heading="Operations">
+          <div className="adm-stats">
+            <StatCard label="Pending orders" value={value(m.pendingOrders)} to={withContext("/app/dispatch")} />
+            <StatCard label="Scheduled deliveries" value={value(m.scheduledDeliveries)} to={withContext("/app/dispatch")} />
+            <StatCard label="Active drivers" value={value(m.activeDrivers)} to={withContext("/app/drivers")} />
+            <StatCard label="Open support" value={value(m.openTickets)} to={withContext("/app/support")} />
+            <StatCard label="Active chats" value={value(m.activeConversations)} to={withContext("/app/chat")} />
+            <StatCard label="Active access codes" value={value(m.activeAccessCodes)} to={withContext("/app/access-codes")} />
           </div>
         </s-section>
+
         <s-section heading="Quick actions">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            {actions.map(([title, description, path]) => <Link key={path} to={withContext(path)} style={{ display: "block", border: "1px solid #e1e3e5", borderRadius: 8, padding: 16, color: "inherit", textDecoration: "none", background: "#fff" }}><strong>{title}</strong><div style={{ marginTop: 6, color: "#616161", fontSize: 14 }}>{description}</div></Link>)}
+          <nav className="adm-actions" aria-label="Quick actions">
+            {QUICK_ACTIONS.map(([label, path]) => (
+              <Link key={path + label} to={withContext(path)}>{label}</Link>
+            ))}
+          </nav>
+        </s-section>
+
+        <s-section heading="System">
+          <div className="adm-system">
+            <s-badge tone={status.appConnected ? "success" : "critical"}>App · {status.appConnected ? "Connected" : "Unavailable"}</s-badge>
+            <s-badge tone={status.databaseConnected ? "success" : "critical"}>Database · {status.databaseConnected ? "Connected" : "Unavailable"}</s-badge>
+            <s-badge tone="info">Environment · {status.environment}</s-badge>
           </div>
         </s-section>
       </s-stack>
